@@ -38,7 +38,7 @@ for i=1:length(files)
 	ori=imread(files{i});
 	% Binarize images.
 	[luCorner,rlCorner,bw]=preprocess;
-	
+
 %% Find the backbone.
 
 % Matlab newer version is required!
@@ -82,7 +82,13 @@ for i=1:length(files)
 	bbDist=Idist.*double(bbImg);
 	bbDist1=bbDist(:);
 	bbProfile=bbDist1(sub2ind(size(bbImg),bbSubs(:,1),bbSubs(:,2)));
-    winLen=48;
+    % The length of the input x must be more than three times the filter
+    % order in filtfilt.
+    if length(bbProfile)>3*48
+        winLen=48;
+    else
+        winLen=floor(length(bbProfile)/3);
+    end
     bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
 	if debugFlag
 		figure, plot(bbProfile,'-k');
@@ -156,7 +162,7 @@ function [luCorner,rlCorner,bw]=preprocess
 % Preprocessing.
 % 1. Find the channel with highest intensity and binarize in the channel.
 % 2. Find the largest connected component and erase all other foreground pixels.
-% 3. Cut the part containing the largest connected component and the following process will be carried on the part.
+% 3. Crop off to get the part containing the largest connected component. Following process will be carried on the part.
 
 global ori cutMargin;
 
@@ -181,6 +187,27 @@ for j=1:Num
 end
 [mv mi]=max(ll);
 bw=(L==mi);
+
+% If there is image border pixel with 1, which is to say, the largest
+% connected component touches the border or even protrudes outside, which
+% causes problem for DSE skeletonization.
+% Under such condition, extra 0 pixels are added on the border.
+res=find(bw(1,:),1);
+if ~isempty(res)
+    bw=[zeros(cutMargin,size(bw,2)); bw];
+end
+res=find(bw(end,:),1);
+if ~isempty(res)
+    bw=[bw; zeros(cutMargin,size(bw,2))];
+end
+res=find(bw(:,1),1);
+if ~isempty(res)
+    bw=[zeros(size(bw,1),cutMargin) bw];
+end
+res=find(bw(:,end),1);
+if ~isempty(res)
+    bw=[bw zeros(size(bw,1),cutMargin)];
+end
 
 % Find the suitable cutting frame, which is represented by left-upper and right-lower corner.
 % luRow
@@ -234,6 +261,8 @@ rlCorner=[rlRow rlCol];
 bw=bw(luRow:rlRow,luCol:rlCol);
 
 end
+
+%% 
 
 % It=imread('im1Bw.png');
 % Idist=bwdist(~It);
