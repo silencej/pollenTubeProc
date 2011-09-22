@@ -14,7 +14,8 @@ end
 
 diagonalDis=sqrt(2);
 
-img=img2~=0;
+img2=img2~=0;
+img=img2;
 %	nif debugFlag || outputImgFlag
 %		img2=img2~=0;
 %	else
@@ -28,20 +29,24 @@ imgHeight=size(img,1);
 % Algorithm: find a non-zero pixel, and trace to an end point by erasing
 % along the search route.
 sp=find(img,1);
-
 [sp(1) sp(2)]=ind2sub(size(img),sp);
-oldPoint=sp;
 nbr1=nbr8(sp);
 img(sp(1),sp(2))=0;
-while(nbr1(1)~=0)
-	sp=nbr1(1,:);
-    % There could be a dead loop if Ren-shape is here.
-%     fprintf(1,'Now sp goes to %f\t%f\n',sp(1),sp(2));
-	nbr1=nbr8(sp);
-	img(oldPoint(1),oldPoint(2))=1;
-	img(sp(1),sp(2))=0;
-	oldPoint=sp;
+if size(nbr1,1)~=1 % sp now is not an end point.
+    while(nbr1(1)~=0)
+        sp=nbr1(1,:);
+        % There could be a dead loop if Ren-shape is here.
+        %     fprintf(1,'Now sp goes to %f\t%f\n',sp(1),sp(2));
+        nbr1=nbr8(sp);
+        img(sp(1),sp(2))=0;
+    end
 end
+
+%% Tracing.
+
+% Restore img.
+img=img2;
+img(sp(1),sp(2))=0;
 
 % img(oldPoint(1),oldPoint(2))=1;
 % img(sp(1),sp(2))=0; % The start point is visited and filled.

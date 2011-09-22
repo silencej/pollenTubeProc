@@ -25,6 +25,10 @@ cutMargin=10; % cut to make the result have 10 pixel margin.
 % NOTE: if cutMargin is too small, i.e., <=5, then div_skeleton_new may has
 % some problem, where bwperim fails.
 
+% Result: Although the gamma transform makes the bw more connected and less
+% rough, it also causes the overestimate of the circle's radius.
+% gamma=1; % Used for image enhancement. Gamma transform with r<1 expands the low intensity levels in output. The lower gamma, the more washed-out of the image.
+
 files=getImgFileNames;
 
 addpath(genpath('BaiSkeletonPruningDCE/'));
@@ -175,6 +179,12 @@ img3=ori(:,:,3);
 [mv mi]=max([max(img1(:)) max(img2(:)) max(img3(:))]);
 clear img1 img2 img3;
 img=ori(:,:,mi);
+
+img=imadjust(img,[double(min(img(:)))/255.0 double(max(img(:)))/255.0],[]);
+% Unsharping doesn't work well.
+% H=fspecial('unsharp');
+% img=imfilter(img,H);
+
 img=imfill((img>=255*graythresh(img)),'holes');
 bw=(img~=0);
 clear img;
