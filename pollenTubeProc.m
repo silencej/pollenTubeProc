@@ -7,13 +7,15 @@ function pollenTubeProc
 %	the Free Software Foundation, either version 3 of the License, or
 %	(at your option) any later version.
 %	
-%	Foobar is distributed in the hope that it will be useful,
+%	It is distributed in the hope that it will be useful,
 %	but WITHOUT ANY WARRANTY; without even the implied warranty of
 %	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 %	GNU General Public License for more details.
 %	
 %	You should have received a copy of the GNU General Public License
 %	along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+%
+%	Website - https://github.com/silencej/pollenTubeProc
 %
 %	Copyright, 2011 Chaofeng Wang <owen263@gmail.com>
 
@@ -151,10 +153,10 @@ for i=1:length(files)
 
     fprintf(1,'Image: %s\n',files{i});
     fprintf(1,'Backbone Euclidean Length: %6.2f pixels.\n',bbLen);
-    fprintf(1,'Largest radius: %6.2f pixels.\n',circleCenter(1,3));
-    fprintf(1,'Second largest radius: %6.2f pixels.\n',circleCenter(2,3));
+    fprintf(1,'Largest radius (red circle): %6.2f pixels.\n',circleCenter(1,3));
+    fprintf(1,'Second largest radius (cyan circle): %6.2f pixels.\n',circleCenter(2,3));
     if length(locsS)>=3
-        fprintf(1,'Third largest radius: %6.2f pixels.\n',circleCenter(3,3));
+        fprintf(1,'Third largest radius (blue circle): %6.2f pixels.\n',circleCenter(3,3));
     else
         fprintf(1,'There are only two peaks in backbone profile.\n');
     end
