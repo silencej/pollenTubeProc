@@ -16,7 +16,8 @@ end
 
 if isequal(filename,0)
 	disp('User Pressed Cancel.');
-	exit;
+    filenames={0};
+	return;
 end
 
 fid=fopen('path.hist','wt');

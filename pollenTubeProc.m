@@ -19,7 +19,6 @@ function pollenTubeProc
 %
 %	Copyright, 2011 Chaofeng Wang <owen263@gmail.com>
 
-
 global ori cutMargin;
 
 debugFlag=1;
@@ -32,6 +31,9 @@ cutMargin=10; % cut to make the result have 10 pixel margin.
 % gamma=1; % Used for image enhancement. Gamma transform with r<1 expands the low intensity levels in output. The lower gamma, the more washed-out of the image.
 
 files=getImgFileNames;
+if files{1}==0
+    return;
+end
 
 addpath(genpath('BaiSkeletonPruningDCE/'));
 close all;
@@ -95,6 +97,7 @@ for i=1:length(files)
     else
         winLen=floor(length(bbProfile)/3);
     end
+	bbProfile=double(bbProfile);
     bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
 	if debugFlag
 		figure, plot(bbProfile,'-k');
@@ -178,9 +181,9 @@ imgHeight=size(ori,1);
 img1=ori(:,:,1);
 img2=ori(:,:,2);
 img3=ori(:,:,3);
-[mv mi]=max([max(img1(:)) max(img2(:)) max(img3(:))]);
+[mv1 mi1]=max([max(img1(:)) max(img2(:)) max(img3(:))]);
 clear img1 img2 img3;
-img=ori(:,:,mi);
+img=ori(:,:,mi1);
 
 % Enhancement.
 % img=imadjust(img,[double(min(img(:)))/255.0 double(max(img(:)))/255.0],[]);
@@ -191,6 +194,7 @@ img=ori(:,:,mi);
 
 % 1. Otsu's method.
 thre=255*graythresh(img);
+%disp(thre);
 
 % The following falied!! Since the histograms of different images differ a
 % lot!
@@ -201,7 +205,7 @@ thre=255*graythresh(img);
 
 % imgEdge=edge(img,'canny');
 
-img=(img>=thre);
+img=(img>thre);
 
 % img=img+imgEdge;
 
@@ -289,6 +293,16 @@ end
 luCorner=[luRow luCol];
 rlCorner=[rlRow rlCol];
 bw=bw(luRow:rlRow,luCol:rlCol);
+
+% Thresholding with Otsu's method again in a more confined scope.
+imgPart=ori(:,:,mi1);
+imgPart=imgPart(luRow:rlRow,luCol:rlCol);
+thre=255*graythresh(imgPart);
+bw=(imgPart>thre);
+bw=imfill(bw,'holes');
+bw=(bw~=0);
+
+% scaleImg(imgPart);
 
 end
 
