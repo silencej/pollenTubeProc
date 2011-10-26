@@ -182,12 +182,30 @@ img3=ori(:,:,3);
 clear img1 img2 img3;
 img=ori(:,:,mi);
 
-img=imadjust(img,[double(min(img(:)))/255.0 double(max(img(:)))/255.0],[]);
+% Enhancement.
+% img=imadjust(img,[double(min(img(:)))/255.0 double(max(img(:)))/255.0],[]);
+
 % Unsharping doesn't work well.
 % H=fspecial('unsharp');
 % img=imfilter(img,H);
 
-img=imfill((img>=255*graythresh(img)),'holes');
+% 1. Otsu's method.
+thre=255*graythresh(img);
+
+% The following falied!! Since the histograms of different images differ a
+% lot!
+% % histogram simple threshold, which is the first peak after the maximal peak - background - in histogram.
+% [counts x]=imhist(img);
+% dcounts=diff(counts);
+% thre=x(find(dcounts>=0,1))+1;
+
+% imgEdge=edge(img,'canny');
+
+img=(img>=thre);
+
+% img=img+imgEdge;
+
+img=imfill(img,'holes');
 bw=(img~=0);
 clear img;
 
