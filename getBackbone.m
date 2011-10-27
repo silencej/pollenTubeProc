@@ -64,11 +64,17 @@ else
 end
 % start vertices queue. [startPointLabel row col firstLen].
 svQueue(1,:)=[vNum, nbr1, firstLen];
+img(nbr1(1),nbr1(2))=0;
 eNum=0;
 queIdx=1;
 edges=zeros(1,3);
 while (queIdx<=size(svQueue,1))
 	[ep len]=traceToEJ(svQueue(queIdx,2:3),svQueue(queIdx,4));
+    
+    % Debug.
+    if (ep(2)==274)
+        fprintf(1,'Now the 274.\n');
+    end
 	
 	if (vertices((vertices(:,2)==ep(1)),3)==ep(2))
 		fprintf(1,'Same vertex label???!!!\n');
@@ -99,6 +105,7 @@ while (queIdx<=size(svQueue,1))
 			firstLen=diagonalDis;
 		end
 		svQueue(size(svQueue,1)+1,:)=[vNum nbr1(k,:) firstLen];
+        img(nbr1(k,1),nbr1(k,2))=0;
 	end
 end
 
@@ -137,6 +144,7 @@ for i=1:size(vertices,1)
 	end
 	nbrs=nbr8(vertices(i,2:3));
 	if size(nbrs,1)==1
+        img(vertices(i,2),vertices(i,3))=0;
 		ep=traceToEJ(vertices(i,2:3),0);
 		img(ep(1),ep(2))=1;
 	end
@@ -188,7 +196,7 @@ function [ep len]=traceToEJ(sp,len)
 global img diagonalDis;
 
 [nbr1 isNbr4]=nbr8(sp);
-img(sp(1),sp(2))=0;
+% img(sp(1),sp(2))=0; % Sp should be 0 before tracing, after it's put into svQueue.
 % In case the input sp is an ep.
 ep=sp;
 % len=0;

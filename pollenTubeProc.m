@@ -1,4 +1,4 @@
-function pollenTubeProc
+function pollenTubeProc(gThre)
 % PollenTubeProc.
 % Run it as 'pollenTubeProc', then a dialogue comes out asking for image file(s);
 %
@@ -18,6 +18,14 @@ function pollenTubeProc
 %	Website - https://github.com/silencej/pollenTubeProc
 %
 %	Copyright, 2011 Chaofeng Wang <owen263@gmail.com>
+
+% User specify global threshold in range (0 1).
+if nargin==0
+    gThre=0.2;
+end
+if gThre>=1 || gThre<=0
+    error('pollenTubeProc: User should specify global threshold in range (0 1).');
+end
 
 global ori cutMargin;
 
@@ -45,7 +53,7 @@ for i=1:length(files)
     end
 	ori=imread(files{i});
 	% Binarize images.
-	[luCorner,rlCorner,bw]=preprocess;
+	[luCorner,rlCorner,bw]=preprocess(gThre);
 
 %% Find the backbone.
 
@@ -167,7 +175,7 @@ end
 
 end
 
-function [luCorner,rlCorner,bw]=preprocess
+function [luCorner,rlCorner,bw]=preprocess(gThre)
 % Preprocessing.
 % 1. Find the channel with highest intensity and binarize in the channel.
 % 2. Find the largest connected component and erase all other foreground pixels.
@@ -192,9 +200,10 @@ img=ori(:,:,mi1);
 % H=fspecial('unsharp');
 % img=imfilter(img,H);
 
-% 1. Otsu's method.
-thre=255*graythresh(img);
-%disp(thre);
+% imgNoZero=img(img>5);
+
+% % 1. Otsu's method.
+% thre=255*graythresh(img);
 
 % The following falied!! Since the histograms of different images differ a
 % lot!
@@ -203,11 +212,8 @@ thre=255*graythresh(img);
 % dcounts=diff(counts);
 % thre=x(find(dcounts>=0,1))+1;
 
-% imgEdge=edge(img,'canny');
-
+thre=gThre*255;
 img=(img>thre);
-
-% img=img+imgEdge;
 
 img=imfill(img,'holes');
 bw=(img~=0);
@@ -294,15 +300,29 @@ luCorner=[luRow luCol];
 rlCorner=[rlRow rlCol];
 bw=bw(luRow:rlRow,luCol:rlCol);
 
-% Thresholding with Otsu's method again in a more confined scope.
-imgPart=ori(:,:,mi1);
-imgPart=imgPart(luRow:rlRow,luCol:rlCol);
-thre=255*graythresh(imgPart);
-bw=(imgPart>thre);
-bw=imfill(bw,'holes');
-bw=(bw~=0);
+% % Don't give any much help if the halo problem is not serious.
+% % Thresholding with Otsu's method again in a more confined scope.
+% imgPart=ori(:,:,mi1);
+% imgPart=imgPart(luRow:rlRow,luCol:rlCol);
+% 
+% thre=255*graythresh(imgPart);
+% bw=(imgPart>thre);
+% bw=imfill(bw,'holes');
+% bw=(bw~=0);
 
-% scaleImg(imgPart);
+
+% % Dehalo: Fail in generality.
+% % ridge finding.
+% fWindowLen=5;
+% imgPartS=imfilter(imgPart,fspecial('gaussian',[fWindowLen fWindowLen],1));
+% imgRidge=ridgeFind(imgPartS,21,10);
+% clear imgPartS;
+% res=imgPart.*uint8(imgRidge);
+% res=(res>255*graythresh(res(res>0)));
+% res=connectNbr(res);
+% bw=imfill(res,'holes');
+% bw=(bw~=0);
+
 
 end
 
