@@ -21,7 +21,7 @@ function pollenTubeProc(gThre)
 
 % User specify global threshold in range (0 1).
 if nargin==0
-    gThre=0.2;
+    gThre=0.1;
 end
 if gThre>=1 || gThre<=0
     error('pollenTubeProc: User should specify global threshold in range (0 1).');

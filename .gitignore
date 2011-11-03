@@ -4,3 +4,9 @@
 .svn
 .svn/*
 path.hist
+*.tiff
+*.tif
+*.png
+*.fig
+adaptivethreshold
+
