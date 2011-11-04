@@ -1,4 +1,4 @@
-function pollenTubeProc(gThre)
+function pollenTubeProc
 % PollenTubeProc.
 % Run it as 'pollenTubeProc', then a dialogue comes out asking for image file(s);
 %
@@ -19,15 +19,14 @@ function pollenTubeProc(gThre)
 %
 %	Copyright, 2011 Chaofeng Wang <owen263@gmail.com>
 
-% User specify global threshold in range (0 1).
-if nargin==0
-    gThre=0.1;
-end
-if gThre>=1 || gThre<=0
-    error('pollenTubeProc: User should specify global threshold in range (0 1).');
-end
+global ori cutMargin handles luCorner rlCorner;
 
-global ori cutMargin;
+% Specify global threshold in range (0 1).
+handles.gThre=uint8(0.1*255);
+
+% if gThre>=1 || gThre<=0
+%     error('pollenTubeProc: User should specify global threshold in range (0 1).');
+% end
 
 debugFlag=1;
 cutMargin=10; % cut to make the result have 10 pixel margin.
@@ -49,11 +48,13 @@ close all;
 for i=1:length(files)
 	% Timer.
     if debugFlag
-	tic;
+        tic;
     end
 	ori=imread(files{i});
+    handles.filename=files{i};
+    
 	% Binarize images.
-	[luCorner,rlCorner,bw]=preprocess(gThre);
+	[luCorner,rlCorner,bw]=preprocess;
 
 %% Find the backbone.
 
@@ -175,23 +176,57 @@ end
 
 end
 
-function [luCorner,rlCorner,bw]=preprocess(gThre)
+function bw=plotThreResult
+
+global handles grayOri ori;
+
+luRow=handles.luCorner(1);
+luCol=handles.luCorner(2);
+rlRow=handles.rlCorner(1);
+rlCol=handles.rlCorner(2);
+
+grayOriPart=grayOri(luRow:rlRow,luCol:rlCol); % ori for show.
+bw=(grayOriPart>handles.thre);
+bw=imfill(bw,'holes');
+bw=(bw~=0);
+warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
+
+if ~isfield(handles,'fH') || ~ishandle(handles.fH)
+    handles.fH=figure;
+end
+figure(handles.fH);
+
+bwP=bwperim(bw); % perimeter binary image.
+% bw=bw(luRow:rlRow,luCol:rlCol);
+oriShow=ori(luRow:rlRow,luCol:rlCol,:); % ori for show.
+oriShow1=oriShow(:,:,1); % oriShow 1 layer for temp use.
+oriShow1(bwP)=255;
+oriShow(:,:,1)=oriShow1;
+oriShow1=oriShow(:,:,2); % oriShow 1 layer for temp use.
+oriShow1(bwP)=255;
+oriShow(:,:,2)=oriShow1;
+oriShow1=oriShow(:,:,3); % oriShow 1 layer for temp use.
+oriShow1(bwP)=255;
+oriShow(:,:,3)=oriShow1;
+imshow(oriShow);
+
+end
+
+function [luCorner rlCorner bw]=preprocess
 % Preprocessing.
 % 1. Find the channel with highest intensity and binarize in the channel.
 % 2. Find the largest connected component and erase all other foreground pixels.
 % 3. Crop off to get the part containing the largest connected component. Following process will be carried on the part.
+%
 
-global ori cutMargin;
-
-imgWidth=size(ori,2);
-imgHeight=size(ori,1);
+global ori grayOri handles cutMargin;
 
 img1=ori(:,:,1);
 img2=ori(:,:,2);
 img3=ori(:,:,3);
 [mv1 mi1]=max([max(img1(:)) max(img2(:)) max(img3(:))]);
 clear img1 img2 img3;
-img=ori(:,:,mi1);
+grayOri=ori(:,:,mi1);
 
 % Enhancement.
 % img=imadjust(img,[double(min(img(:)))/255.0 double(max(img(:)))/255.0],[]);
@@ -205,19 +240,26 @@ img=ori(:,:,mi1);
 % % 1. Otsu's method.
 % thre=255*graythresh(img);
 
-% The following falied!! Since the histograms of different images differ a
-% lot!
-% % histogram simple threshold, which is the first peak after the maximal peak - background - in histogram.
-% [counts x]=imhist(img);
-% dcounts=diff(counts);
-% thre=x(find(dcounts>=0,1))+1;
+% Read thre from threFile.
+% thre [-1 254].
+[pathstr, name]=fileparts(handles.filename);
+threFile=fullfile(pathstr,[name '.thre']);
+if exist(threFile,'file')
+    fid=fopen(threFile,'rt');
+    thre=fscanf(fid,'%d');
+    fclose(fid);
+    if length(thre)>1
+        disp('pollenTubeProc: preprocess: threshold file contains more than 1 threshold.');
+    end
+else
+    thre=handles.gThre;
+end
+handles.thre=thre;
 
-thre=gThre*255;
-img=(img>thre);
-
-img=imfill(img,'holes');
-bw=(img~=0);
-clear img;
+% thre=thre*255;
+bw=(grayOri>handles.thre);
+bw=imfill(bw,'holes');
+bw=(bw~=0);
 
 % Find the largest connected component.
 [L,Num]=bwlabeln(bw,4);
@@ -228,27 +270,36 @@ end
 [mv mi]=max(ll);
 bw=(L==mi);
 
+%% Clear border.
 % If there is image border pixel with 1, which is to say, the largest
 % connected component touches the border or even protrudes outside, which
 % causes problem for DSE skeletonization.
-% Under such condition, extra 0 pixels are added on the border.
-res=find(bw(1,:),1);
-if ~isempty(res)
-    bw=[zeros(cutMargin,size(bw,2)); bw];
-end
-res=find(bw(end,:),1);
-if ~isempty(res)
-    bw=[bw; zeros(cutMargin,size(bw,2))];
-end
-res=find(bw(:,1),1);
-if ~isempty(res)
-    bw=[zeros(size(bw,1),cutMargin) bw];
-end
-res=find(bw(:,end),1);
-if ~isempty(res)
-    bw=[bw zeros(size(bw,1),cutMargin)];
-end
 
+% Directly clear the pixels in the range of cutMargin.
+bw(1:cutMargin,:)=0;
+bw(end-cutMargin+1:end,:)=0;
+bw(:,1:cutMargin)=0;
+bw(:,end-cutMargin+1:end)=0;
+
+% Under such condition, extra 0 pixels are added on the border.
+% res=find(bw(1,:),1);
+% if ~isempty(res)
+%     bw=[zeros(cutMargin,size(bw,2)); bw];
+% end
+% res=find(bw(end,:),1);
+% if ~isempty(res)
+%     bw=[bw; zeros(cutMargin,size(bw,2))];
+% end
+% res=find(bw(:,1),1);
+% if ~isempty(res)
+%     bw=[zeros(size(bw,1),cutMargin) bw];
+% end
+% res=find(bw(:,end),1);
+% if ~isempty(res)
+%     bw=[bw zeros(size(bw,1),cutMargin)];
+% end
+
+%% Cut
 % Find the suitable cutting frame, which is represented by left-upper and right-lower corner.
 % luRow
 for j=1:size(bw,1)
@@ -283,6 +334,9 @@ for j=luCol:size(bw,2)
 	end
 end
 
+imgWidth=size(ori,2);
+imgHeight=size(ori,1);
+
 if luRow-cutMargin>0
 	luRow=luRow-cutMargin;
 end
@@ -298,48 +352,38 @@ end
 
 luCorner=[luRow luCol];
 rlCorner=[rlRow rlCol];
-bw=bw(luRow:rlRow,luCol:rlCol);
+handles.luCorner=luCorner;
+handles.rlCorner=rlCorner;
 
-% % Don't give any much help if the halo problem is not serious.
-% % Thresholding with Otsu's method again in a more confined scope.
-% imgPart=ori(:,:,mi1);
-% imgPart=imgPart(luRow:rlRow,luCol:rlCol);
-% 
-% thre=255*graythresh(imgPart);
-% bw=(imgPart>thre);
-% bw=imfill(bw,'holes');
-% bw=(bw~=0);
+bw=plotThreResult;
+fprintf(1,'======================================================================\nThe present threshold is %d.\n',handles.thre);
+reply=input('If you want to reset the threshold, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+while ~isempty(reply)
+    handles.thre=uint8(str2double(reply));
+    bw=plotThreResult;
+    fprintf(1,'======================================================================\nThe present threshold is %d.\n',handles.thre);
+    reply=input('If you want to reset the threshold, input here in range [0 254].\nIf the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+end
 
+close(handles.fH);
 
-% % Dehalo: Fail in generality.
-% % ridge finding.
-% fWindowLen=5;
-% imgPartS=imfilter(imgPart,fspecial('gaussian',[fWindowLen fWindowLen],1));
-% imgRidge=ridgeFind(imgPartS,21,10);
-% clear imgPartS;
-% res=imgPart.*uint8(imgRidge);
-% res=(res>255*graythresh(res(res>0)));
-% res=connectNbr(res);
-% bw=imfill(res,'holes');
-% bw=(bw~=0);
+% Find the largest connected component, again.
+[L,Num]=bwlabeln(bw,4);
+ll=zeros(Num,1);
+for j=1:Num
+	ll(j)=length(find(L==j));
+end
+[mv mi]=max(ll);
+bw=(L==mi);
 
+[pathstr, name]=fileparts(handles.filename);
+threFile=fullfile(pathstr,[name '.thre']);
+fid=fopen(threFile,'w');
+fprintf(fid,'%d',handles.thre);
+fclose(fid);
+
+% The bw still has small white spots.
+% the fid to write threFile is invalid.
 
 end
 
-%% 
-
-% It=imread('im1Bw.png');
-% Idist=bwdist(~It);
-% Iskeldist=Idist.*double(bbImg);
-% bbInt=bbImg(find(Iskeldist~=0));
-% bbInt=Iskeldist(find(Iskeldist~=0));
-% mean(bbInt)
-% ans =
-%	82.0784
-% ito=imopen(It,strel('disk',82));
-% thre=mean(bbInt)+std(bbInt);
-% thre
-% thre =
-%   115.1093
-% ito=imopen(It,strel('disk',115));
-% figure,imshow(ito);
