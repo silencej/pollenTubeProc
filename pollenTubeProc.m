@@ -71,6 +71,8 @@ for i=1:length(files)
 	%the shape must be black, i.e., values zero.
 	% [bw,I,x,y,x1,y1,aa,bb]=div_skeleton_new(4,1,1-bw,5);
 	[skel]=div_skeleton_new(4,1,1-bw,5);
+    
+%     figure,imshow(bw);
 	
 	% Vertices num at least be 3. However, using 3 may cause "warning: matrix
 	% is singular to working precision." Surprisingly, 4 is also not working.
@@ -85,6 +87,9 @@ for i=1:length(files)
 	% imshow(bw);
 	% imshow(bw+I);
 	skel=parsiSkel(skel);
+    
+%     figure,imshow(skel);
+    
 	[bbSubs bbLen bbImg]=getBackbone(skel,0);
     clear skel;
 	% Timer
@@ -270,34 +275,6 @@ end
 [mv mi]=max(ll);
 bw=(L==mi);
 
-%% Clear border.
-% If there is image border pixel with 1, which is to say, the largest
-% connected component touches the border or even protrudes outside, which
-% causes problem for DSE skeletonization.
-
-% Directly clear the pixels in the range of cutMargin.
-bw(1:cutMargin,:)=0;
-bw(end-cutMargin+1:end,:)=0;
-bw(:,1:cutMargin)=0;
-bw(:,end-cutMargin+1:end)=0;
-
-% Under such condition, extra 0 pixels are added on the border.
-% res=find(bw(1,:),1);
-% if ~isempty(res)
-%     bw=[zeros(cutMargin,size(bw,2)); bw];
-% end
-% res=find(bw(end,:),1);
-% if ~isempty(res)
-%     bw=[bw; zeros(cutMargin,size(bw,2))];
-% end
-% res=find(bw(:,1),1);
-% if ~isempty(res)
-%     bw=[zeros(size(bw,1),cutMargin) bw];
-% end
-% res=find(bw(:,end),1);
-% if ~isempty(res)
-%     bw=[bw zeros(size(bw,1),cutMargin)];
-% end
 
 %% Cut
 % Find the suitable cutting frame, which is represented by left-upper and right-lower corner.
@@ -375,6 +352,38 @@ for j=1:Num
 end
 [mv mi]=max(ll);
 bw=(L==mi);
+
+
+%% Clear border.
+% If there is image border pixel with 1, which is to say, the largest
+% connected component touches the border or even protrudes outside, which
+% causes problem for DSE skeletonization.
+
+% Directly clear the pixels in the range of cutMargin.
+bw(1:cutMargin,:)=0;
+bw(end-cutMargin+1:end,:)=0;
+bw(:,1:cutMargin)=0;
+bw(:,end-cutMargin+1:end)=0;
+
+% Under such condition, extra 0 pixels are added on the border.
+% res=find(bw(1,:),1);
+% if ~isempty(res)
+%     bw=[zeros(cutMargin,size(bw,2)); bw];
+% end
+% res=find(bw(end,:),1);
+% if ~isempty(res)
+%     bw=[bw; zeros(cutMargin,size(bw,2))];
+% end
+% res=find(bw(:,1),1);
+% if ~isempty(res)
+%     bw=[zeros(size(bw,1),cutMargin) bw];
+% end
+% res=find(bw(:,end),1);
+% if ~isempty(res)
+%     bw=[bw zeros(size(bw,1),cutMargin)];
+% end
+
+%% Save to thre file.
 
 [pathstr, name]=fileparts(handles.filename);
 threFile=fullfile(pathstr,[name '.thre']);

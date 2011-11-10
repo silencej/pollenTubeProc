@@ -72,9 +72,9 @@ while (queIdx<=size(svQueue,1))
 	[ep len]=traceToEJ(svQueue(queIdx,2:3),svQueue(queIdx,4));
     
     % Debug.
-    if (ep(2)==274)
-        fprintf(1,'Now the 274.\n');
-    end
+%     if (ep(2)==296)
+%         fprintf(1,'Now the 296.\n');
+%     end
 	
 	if (vertices((vertices(:,2)==ep(1)),3)==ep(2))
 		fprintf(1,'Same vertex label???!!!\n');
@@ -153,6 +153,7 @@ bbImg=img;
 if debugFlag
 	imshow(bbImg);
 end
+
 
 % Get the backbone indices sequence.
 % Now img is the backbone img.
