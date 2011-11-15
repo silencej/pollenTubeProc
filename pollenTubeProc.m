@@ -44,6 +44,7 @@ end
 
 addpath(genpath('BaiSkeletonPruningDCE/'));
 close all;
+iptsetpref('ImshowBorder','tight'); % Make imshow display no border and thus print will save no white border.
 
 for i=1:length(files)
 	% Timer.
