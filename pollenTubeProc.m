@@ -350,7 +350,12 @@ api=iptgetapi(h);
 pos=api.getPosition;
 mask=poly2mask(pos(:,1),pos(:,2),size(bw,1),size(bw,2));
 while ~isempty(find(mask(:), 1))
-    % If the ROI is m
+    andBw=mask.*bw;
+    minusBw=mask.*(~bw);
+    % If the ROI contains mostly bw's 1s', the ROI is used to erase.
+    if length(find(andBw(:)))>=length(find(minusBw(:)))
+        medianWin=1;
+    end
     
     handles.thre=uint8(str2double(reply));
     bw=plotThreResult;
