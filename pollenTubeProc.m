@@ -343,6 +343,21 @@ while ~isempty(reply)
     reply=input('If you want to reset the threshold, input here in range [0 254].\nIf the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
 end
 
+fprintf(1,'======================================================================\nManual correction for the bitmap.\n');
+fprintf(1,'Select a region of interest, modify, and double click if finished. If no need to correct, just double click.\n');
+h=impoly(gca,'Closed');
+api=iptgetapi(h);
+pos=api.getPosition;
+mask=poly2mask(pos(:,1),pos(:,2),size(bw,1),size(bw,2));
+while ~isempty(find(mask(:), 1))
+    % If the ROI is m
+    
+    handles.thre=uint8(str2double(reply));
+    bw=plotThreResult;
+    fprintf(1,'======================================================================\nThe present threshold is %d.\n',handles.thre);
+    reply=input('If you want to reset the threshold, input here in range [0 254].\nIf the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+end
+
 close(handles.fH);
 
 % Find the largest connected component, again.
