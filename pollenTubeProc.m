@@ -19,12 +19,13 @@ function pollenTubeProc
 %
 %	Copyright, 2011 Chaofeng Wang <owen263@gmail.com>
 
-global ori handles luCorner rlCorner;
+global handles debugFlag;
+
+debugFlag=1;
 
 % Specify global threshold in range [0 254].
 handles.thre=uint8(0.1*255);
-
-debugFlag=1;
+handles.skelVerNum=7; % Skeleton Vertices number. atleast 5.
 handles.diskSize=50;
 handles.eraseFactor=0;
 handles.addFactor=2;
@@ -40,6 +41,10 @@ files=getImgFileNames;
 if files{1}==0
     return;
 end
+if length(files)>1
+    debugFlag=0;
+    fprintf(1,'Multiple image input, thus no plot output.\n');
+end
 
 addpath(genpath('BaiSkeletonPruningDCE/'));
 close all;
@@ -47,142 +52,146 @@ warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
 iptsetpref('ImshowBorder','tight'); % Make imshow display no border and thus print will save no white border.
 
 for i=1:length(files)
-	% Timer.
-    if debugFlag
-        tic;
-    end
-	ori=imread(files{i});
-    handles.filename=files{i};
-    
-	% Binarize images.
-	bw=preprocess;
+    procImg(files{i});
+end
+
+end
+
+function procImg(imgFile)
+
+global ori handles luCorner rlCorner debugFlag;
+
+% Timer.
+tic;
+
+ori=imread(imgFile);
+handles.filename=imgFile;
+
+% Binarize images.
+bw=preprocess;
 
 %% Find the backbone.
 
-% Matlab newer version is required!
-%	 CC=bwconncomp(bw,4);
-%	 for j=1:CC.NumObjects
-%		 ll=length(CC.PixelIdxList{j});
-%	 end
-%	 [mv mi]=max(ll);
-%	 bw=zeros(size(bw));
-%	 bw(CC.PixelIdxList{mi})=1;
-%	 bw=(bw~=0);
+%the shape must be black, i.e., values zero.
+% Vertices num at least be 3. However, using 3 may cause "warning: matrix
+% is singular to working precision." Surprisingly, 4 is also not working.
+% Thus 5 is the minimum.
+% Time expenditure for div_skeleton_new:
+% vertices num=5: 108.20s
+% vertices num=4: 107.29s
+% [bw,I,x,y,x1,y1,aa,bb]=div_skeleton_new(4,1,1-bw,5);
+% [skel]=div_skeleton_new(4,1,1-bw,5);
+[skel]=div_skeleton_new(4,1,1-bw,handles.skelVerNum);
 
-	%the shape must be black, i.e., values zero.
-	% [bw,I,x,y,x1,y1,aa,bb]=div_skeleton_new(4,1,1-bw,5);
-	[skel]=div_skeleton_new(4,1,1-bw,5);
-    
-%     figure,imshow(bw);
-	
-	% Vertices num at least be 3. However, using 3 may cause "warning: matrix
-	% is singular to working precision." Surprisingly, 4 is also not working.
-	% Thus 5 is the minimum.
-	% Time expenditure for div_skeleton_new:
-	% vertices num=5: 108.20s
-	% vertices num=4: 107.29s
-	
-	skel=(skel~=0); % Convert the unit8 to logical.
-%	 imwrite(bw,'im1Skel.png','png');
-%	 bw=imread('im1Skel.png');
-	% imshow(bw);
-	% imshow(bw+I);
-	skel=parsiSkel(skel);
-    
-%     figure,imshow(skel);
-    
-	[bbSubs bbLen bbImg]=getBackbone(skel,0);
-    clear skel;
-	% Timer
-    if debugFlag
-	toc;
-    end
+skel=(skel~=0); % Convert the unit8 to logical.
+skel=parsiSkel(skel);
+
+% Save skeleton img.
+fullSkel=getFullBw(skel);
+[pathstr, name]=fileparts(handles.filename);
+skelFile=fullfile(pathstr,[name '.skel.png']);
+imwrite(fullSkel,skelFile,'png');
+
+[bbSubs bbLen bbImg]=getBackbone(skel,0);
+clear skel;
+
+% Timer
+toc;
 
 %% Find the pollen and tip radius.
 
-	Idist=bwdist(~bw);
-	clear bw;
-	bbDist=Idist.*double(bbImg);
-	bbDist1=bbDist(:);
-	bbProfile=bbDist1(sub2ind(size(bbImg),bbSubs(:,1),bbSubs(:,2)));
-    % The length of the input x must be more than three times the filter
-    % order in filtfilt.
-    if length(bbProfile)>3*48
-        winLen=48;
-    else
-        winLen=floor(length(bbProfile)/3);
-    end
-	bbProfile=double(bbProfile);
-    bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
-	if debugFlag
-		figure, plot(bbProfile,'-k');
-        hold on;
-        plot(bbProfileF,'-r');
-        hold off;
-        legend('Unfiltered Profile','Filtered Profile');
-	end
+Idist=bwdist(~bw);
+clear bw;
+bbDist=Idist.*double(bbImg);
+bbDist1=bbDist(:);
+bbProfile=bbDist1(sub2ind(size(bbImg),bbSubs(:,1),bbSubs(:,2)));
+% The length of the input x must be more than three times the filter
+% order in filtfilt.
+if length(bbProfile)>3*48
+    winLen=48;
+else
+    winLen=floor(length(bbProfile)/3);
+end
+bbProfile=double(bbProfile);
+bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
+if debugFlag
+    figure, plot(bbProfile,'-k');
+    hold on;
+    plot(bbProfileF,'-r');
+    hold off;
+    legend('Unfiltered Profile','Filtered Profile');
+end
 % Points largest bbProfiles, circleCenter = [row col distanceTransform].
-    [pks locs]=findpeaks(bbProfileF);
-    % pksS - sorted.
+[pks locs]=findpeaks(bbProfileF);
+% pksS - sorted.
 
-    [pksS I]=sort(pks,'descend');
-    locsS=locs(I);
-	circleCenter(1,1:2)=bbSubs(locsS(1),:);
-	circleCenter(1,3)=pksS(1);
-	circleCenter(2,1:2)=bbSubs(locsS(2),:);
-	circleCenter(2,3)=pksS(2);
-    if length(locsS)>=3
-	circleCenter(3,1:2)=bbSubs(locsS(3),:);
-	circleCenter(3,3)=pksS(3);
-    end
-    
+[pksS I]=sort(pks,'descend');
+locsS=locs(I);
+circleCenter(1,1:2)=bbSubs(locsS(1),:);
+circleCenter(1,3)=pksS(1);
+if length(locsS)>=2
+    circleCenter(2,1:2)=bbSubs(locsS(2),:);
+    circleCenter(2,3)=pksS(2);
+end
+if length(locsS)>=3
+    circleCenter(3,1:2)=bbSubs(locsS(3),:);
+    circleCenter(3,3)=pksS(3);
+end
+
 %     % Correct backbone length by radius.
 %     bbLen=bbLen-circleCenter(1,3)-circleCenter(2,3);
 
-	% Draw circles.
-    if debugFlag
-        luCorner=handles.luCorner;
-        rlCorner=handles.rlCorner;
-        figure;
-        warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
-        % Use warning('query','last'); to see the warning message ID.
-        imshow(ori);
-        %		[row col]=find(bbImg);
-        hold on;
-        %		plot(col,row,'.w');
-        % Show the backbone.
-        plot(bbSubs(:,2)+luCorner(2)-1, bbSubs(:,1)+luCorner(1)-1, '.w');
-        % Show the main circles.
-        % 		radius=int32(circleCenter(1,3));
-        radius=circleCenter(1,3);
-        row=circleCenter(1,1)-radius+luCorner(1)-1;
-        col=circleCenter(1,2)-radius+luCorner(2)-1;
-        rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
+% Draw circles.
+if debugFlag
+    luCorner=handles.luCorner;
+    rlCorner=handles.rlCorner;
+    figure;
+    warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
+    % Use warning('query','last'); to see the warning message ID.
+    imshow(ori);
+    %		[row col]=find(bbImg);
+    hold on;
+    %		plot(col,row,'.w');
+    % Show the backbone.
+    plot(bbSubs(:,2)+luCorner(2)-1, bbSubs(:,1)+luCorner(1)-1, '.w');
+    % Show the main circles.
+    % 		radius=int32(circleCenter(1,3));
+    radius=circleCenter(1,3);
+    row=circleCenter(1,1)-radius+luCorner(1)-1;
+    col=circleCenter(1,2)-radius+luCorner(2)-1;
+    rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
+    plot(col+radius,row+radius,'or'); % plot center.
+    if length(locsS)>=2
         radius=circleCenter(2,3);
         row=circleCenter(2,1)-radius+luCorner(1)-1;
         col=circleCenter(2,2)-radius+luCorner(2)-1;
         rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
-        if length(locsS)>=3
+        plot(col+radius,row+radius,'oc');
+    end
+    if length(locsS)>=3
         radius=circleCenter(3,3);
         row=circleCenter(3,1)-radius+luCorner(1)-1;
         col=circleCenter(3,2)-radius+luCorner(2)-1;
         rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','b');
-        end
-        hold off;
+        plot(col+radius,row+radius,'ob');
     end
+    hold off;
+end
 
-    fprintf(1,'Image: %s\n',files{i});
-    fprintf(1,'Backbone Euclidean Length: %6.2f pixels.\n',bbLen);
-    fprintf(1,'Largest radius (red circle): %6.2f pixels.\n',circleCenter(1,3));
+fprintf(1,'Image: %s\n',handles.filename);
+fprintf(1,'Backbone Euclidean Length: %6.2f pixels.\n',bbLen);
+fprintf(1,'Largest radius (red circle): %6.2f pixels.\n',circleCenter(1,3));
+if length(locsS)>=2
     fprintf(1,'Second largest radius (cyan circle): %6.2f pixels.\n',circleCenter(2,3));
-    if length(locsS)>=3
-        fprintf(1,'Third largest radius (blue circle): %6.2f pixels.\n',circleCenter(3,3));
-    else
-        fprintf(1,'There are only two peaks in backbone profile.\n');
-    end
+end
+if length(locsS)>=3
+    fprintf(1,'Third largest radius (blue circle): %6.2f pixels.\n',circleCenter(3,3));
+% else
+%     fprintf(1,'There are only two peaks in backbone profile.\n');
 end
 
 end
+
 
 function bw=preprocess
 % Preprocessing.
@@ -191,7 +200,7 @@ function bw=preprocess
 % 3. Crop off to get the part containing the largest connected component. Following process will be carried on the part.
 %
 
-global handles ori;
+global handles;
 
 %% Cut frame.
 cutFrameFcn;
@@ -255,7 +264,9 @@ while ~isempty(find(mask(:), 1))
 end
 
 %% 
+delete(h);
 close(handles.fH);
+fprintf(1,'User correction finished. Now processing, please wait...\n');
 
 % Find the largest connected component, again.
 bw=keepLargest(bw);
@@ -280,21 +291,9 @@ fid=fopen(threFile,'w');
 fprintf(fid,'%d',handles.thre);
 fclose(fid);
 bwFile=fullfile(pathstr,[name '.bw.png']);
-bwFull=[zeros(handles.luCorner(1)-1,size(bw,2)); bw; zeros(size(ori,1)-handles.rlCorner(1),size(bw,2))];
-bwFull=[zeros(size(bwFull,1),handles.luCorner(2)-1) bwFull zeros(size(bwFull,1),size(ori,2)-handles.rlCorner(2))];
+bwFull=getFullBw(bw);
 imwrite(bwFull,bwFile,'png');
 
-
-end
-
-function imgPart=getPart(img)
-global handles;
-
-luRow=handles.luCorner(1);
-luCol=handles.luCorner(2);
-rlRow=handles.rlCorner(1);
-rlCol=handles.rlCorner(2);
-imgPart=img(luRow:rlRow,luCol:rlCol,:);
 
 end
 
@@ -306,9 +305,9 @@ global handles ori grayOriPart oriPart;
 img1=ori(:,:,1);
 img2=ori(:,:,2);
 img3=ori(:,:,3);
-[mv1 mi1]=max([max(img1(:)) max(img2(:)) max(img3(:))]);
+[mv mi]=max([max(img1(:)) max(img2(:)) max(img3(:))]);
 clear img1 img2 img3;
-grayOri=ori(:,:,mi1);
+grayOri=ori(:,:,mi);
 
 bw=(grayOri>handles.thre);
 bw=imfill(bw,'holes');
@@ -331,16 +330,59 @@ grayOriPart=getPart(grayOri);
 oriPart=getPart(ori);
 end
 
+%% Utility functions.
+
+function bwFull=getFullBw(bw)
+global handles ori;
+
+if ndims(bw)>2
+    fprintf(1,'getFullBw: bw is not two-dimensional!\n');
+    bwFull=0;
+    return;
+end
+
+bwFull=[zeros(handles.luCorner(1)-1,size(bw,2)); bw; zeros(size(ori,1)-handles.rlCorner(1),size(bw,2))];
+bwFull=[zeros(size(bwFull,1),handles.luCorner(2)-1) bwFull zeros(size(bwFull,1),size(ori,2)-handles.rlCorner(2))];
+
+end
+
+function imgPart=getPart(img)
+global handles;
+
+luRow=handles.luCorner(1);
+luCol=handles.luCorner(2);
+rlRow=handles.rlCorner(1);
+rlCol=handles.rlCorner(2);
+imgPart=img(luRow:rlRow,luCol:rlCol,:);
+
+end
+
 function bw=keepLargest(bw)
 % Keep the largest connected component.
 
-[L,Num]=bwlabeln(bw,4);
-ll=zeros(Num,1);
-for j=1:Num
-	ll(j)=length(find(L==j));
+ver=getVersion;
+
+if ver<=7.5 % matlab 2007b is 7.5.0.
+    [L,Num]=bwlabeln(bw,4);
+    ll=zeros(Num,1);
+    for j=1:Num
+        ll(j)=length(find(L==j));
+    end
+    [mv mi]=max(ll);
+    bw=(L==mi);
+else
+    % Matlab newer version is required!
+    % Matlab said: bwconncomp uses less memory and sometimes faster.
+    CC=bwconncomp(bw,4);
+    ll=zeros(CC.NumObjects,1);
+    for j=1:CC.NumObjects
+        ll(j)=length(CC.PixelIdxList{j});
+    end
+    [mv mi]=max(ll);
+    bw=zeros(size(bw));
+    bw(CC.PixelIdxList{mi})=1;
+    bw=(bw~=0);
 end
-[mv mi]=max(ll);
-bw=(L==mi);
 
 end
 

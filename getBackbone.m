@@ -110,9 +110,8 @@ while (queIdx<=size(svQueue,1))
 end
 
 %% Find the backbone from distance matrix.
-%% Warshall algorithm.
 
-% disp('Debug');
+% Warshall algorithm.
 
 % Construct adjacency matrix.
 l=size(vertices,1);

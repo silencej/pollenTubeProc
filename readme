@@ -2,7 +2,7 @@ About Manual Correction:
 
 The manual correction can accomplish either adding or erasing task. You only need to select a region and the program will determine the operation depending on how much the region you specified are located.
 
-And more, you only need to specify a smaller region than you want, and the program will automatically adjust the region according to its similarity with surroundings.
+And more, you only need to specify a smaller region than you want to add, and the program will automatically expand the region according to its similarity with surroundings.
 
 In detail, if the region specified mostly located in the previous chosen zone (the region embraced by the white line), the program will take the erasing operation, otherwise the adding. It's well suited with human perception since if you want to erase, you will specify a region mostly overlapping the chosen zone.
 
@@ -10,5 +10,10 @@ There are some points you should note:
 
 1. When adding, the region you specify should always overlap with previous chosen region. Otherwise, you new added region will be isolated with the chosen zone and discarded afterwards.
 
-2. You don't need to specify a region carefully, but make sure that the region you specify is always smaller than the region you want. The program will automatically expand your specified region afterwards. Therefore, if you specify a region larger than what you want, the chose zone may loss a lot.
+2. You don't need to specify a region carefully. But make sure that
+a. The region you specify is always smaller than the region you want to add,
+b. And the region is always larger than the region you want to erase.
+The program will automatically expand or shrink your specified region respectively afterwards.
+
+
 
