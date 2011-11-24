@@ -1,5 +1,5 @@
-function [bbSubs, len, bbImg]=getBackbone(img2,debugFlag)
-% [bbSubs, len, bbImg]=getBackbone(img)
+function [bbSubs, bbLen, bbImg, tbSubs, tbLen, tbImg, ratioInBbSubs, idxLen]=getBackbone(img2,debugFlag)
+% [bbSubs, bbLen, bbImg]=getBackbone(img)
 % bbSubs: subs [row col] for backbone pixels in connection order, which is good for tracing.
 % len: backbone length.
 % img2: binary image skeleton matrix. There should not be loop in the
@@ -25,27 +25,13 @@ img=img2;
 imgWidth=size(img,2);
 imgHeight=size(img,1);
 
-%% The first phase: find an end point.
-% Algorithm: find a non-zero pixel, and trace to an end point by erasing
-% along the search route.
-sp=find(img,1);
-[sp(1) sp(2)]=ind2sub(size(img),sp);
-nbr1=nbr8(sp);
-img(sp(1),sp(2))=0;
-if size(nbr1,1)~=1 % sp now is not an end point.
-    while(nbr1(1)~=0)
-        sp=nbr1(1,:);
-        % There could be a dead loop if Ren-shape is here.
-        %     fprintf(1,'Now sp goes to %f\t%f\n',sp(1),sp(2));
-        nbr1=nbr8(sp);
-        img(sp(1),sp(2))=0;
-    end
-end
+%% The first phase.
 
-%% Tracing.
+%find an end point.
+sp=findEndpoint(img);
 
-% Restore img.
-img=img2;
+% Tracing.
+
 img(sp(1),sp(2))=0;
 
 % img(oldPoint(1),oldPoint(2))=1;
@@ -130,22 +116,32 @@ end
 D=fastFloyd(A);
 
 [Y I]=max(D(:));
-len=Y;
+bbLen=Y;
 [row col]=ind2sub(size(D),I);
 sp=vertices(row,2:3);
-% ep=vertices(col,2:3);
+ep=vertices(col,2:3);
 
 img=img2;
-clear img2;
+% clear img2;
 for i=1:size(vertices,1)
 	if i==row || i==col
 		continue;
 	end
 	nbrs=nbr8(vertices(i,2:3));
-	if size(nbrs,1)==1
+	if nbrs(1)~=0
+        tempImg=img; % restore img.
         img(vertices(i,2),vertices(i,3))=0;
-		ep=traceToEJ(vertices(i,2:3),0);
-		img(ep(1),ep(2))=1;
+        epTrace=traceToEJ(vertices(i,2:3),0);
+		img(epTrace(1),epTrace(2))=1;
+        if size(nbrs,1)==1 % If it's end point, no connectness check is needed.
+            continue;
+        end
+        % If backbone's two end points is not connected, reverse the
+        % erasing.
+        L=bwlabel(img,8);
+        if L(sp(1),sp(2))~=L(ep(1),ep(2))
+            img=tempImg;
+        end
 	end
 end
 bbImg=img;
@@ -157,6 +153,116 @@ end
 % Get the backbone indices sequence.
 % Now img is the backbone img.
 bbSubs=getBbSub(sp);
+bbSp=sp;
+
+%% Third branch.
+% Definition: the longest path in the skel-backbone image.
+
+remImg=img2-bbImg; % Remaining img.
+tempImg=keepLargest(remImg);
+
+img=tempImg;
+sp=findEndpoint(tempImg);
+img(sp(1),sp(2))=0;
+[ep tbLen]=traceToEJ(sp);
+tbImg=tempImg-img;
+img=tbImg;
+% Now img is tb img;
+tbSubs=getBbSub(sp);
+% Cal the ratio of tb in bbSubs.
+img=img2;
+nbrs=nbr8(sp);
+if size(nbrs,1)==1 % sp is end point.
+    nbrs=nbr8(ep);
+    if size(nbrs,1)==1
+        fprintf(1,'getBackbone: tb ratio can''t cal! ep and sp both end points.\n');
+        ratioInBbSubs=0;
+        return;
+    end
+    img=bbImg;
+    [len idxLen]=getLenOnLine(bbSp,ep); % tb Joint Point.
+elseif size(nbrs,1)>1
+    img=bbImg;
+    [len idxLen]=getLenOnLine(bbSp,ep);
+else
+    fprintf(1,'getBackbone: Don''t know what happend.\n');
+    ratioInBbSubs=0;
+    return;
+end
+ratioInBbSubs=len/bbLen;
+
+% %% Get the longest branch which has an end not belonging to the backbone.
+% % [Y I]=max(A(:));
+% % len=Y;
+% % [row col]=ind2sub(size(D),I);
+% % sp=vertices(row,2:3);
+% 
+% tbLen=0;
+% tbSubs=0;
+% for i=1:size(vertices,1)
+% 	if i==row || i==col
+% 		continue;
+% 	end
+% 	nbrs=nbr8(vertices(i,2:3));
+% 	if size(nbrs,1)==1 % This is an end point.
+%         [tbLen mIdx]=max(A(vertices(i,1),:));
+%         img(vertices(i,2),vertices(i,3))=0;
+% 		ep=traceToEJ(vertices(i,2:3),0);
+% 		img(ep(1),ep(2))=1;
+% 	end
+% end
+
+end
+
+function [len idxLen]=getLenOnLine(sp,ep)
+% sp must be an end point!
+% ep may not reside on the line but contact it instead.
+global img diagonalDis;
+
+idxLen=1; % idxLen is used to plot the branch position on the bbProfile, it's different from euclidean len.
+[nbrs isNbr4]=nbr8(sp);
+img(sp(1),sp(2))=0;
+if isNbr4
+    len=1;
+else
+    len=diagonalDis;
+end
+dis=abs(ep(1)-nbrs(1))+abs(ep(2)-nbrs(2));
+
+while dis>2
+    sp=nbrs;
+    [nbrs isNbr4]=nbr8(sp);
+    img(sp(1),sp(2))=0;
+    idxLen=idxLen+1;
+    if isNbr4
+        len=len+1;
+    else
+        len=len+diagonalDis;
+    end
+    dis=abs(ep(1)-sp(1))+abs(ep(2)-sp(2));
+end
+
+end
+
+function sp=findEndpoint(img)
+% Algorithm: find a non-zero pixel, and trace to an end point by erasing
+% along the search route.
+% NOTE: img is NOT global! Thus global img will not be changed here.
+
+
+sp=find(img,1);
+[sp(1) sp(2)]=ind2sub(size(img),sp);
+nbr1=nbr8(sp);
+img(sp(1),sp(2))=0;
+if size(nbr1,1)~=1 % sp now is not an end point.
+    while(nbr1(1)~=0)
+        sp=nbr1(1,:);
+        % There could be a dead loop if Ren-shape is here.
+        %     fprintf(1,'Now sp goes to %f\t%f\n',sp(1),sp(2));
+        nbr1=nbr8(sp);
+        img(sp(1),sp(2))=0;
+    end
+end
 
 end
 
@@ -190,8 +296,12 @@ end
 function [ep len]=traceToEJ(sp,len)
 % [ep len]=traceToEJ(sp,len)
 % Input 'len' is the previous length. The output 'len' will add up on the
-% input 'len'.
+% input 'len'. 'len' defaults to 0.
 % Trace the skeleton to an end point or a junction.
+
+if nargin<2
+    len=0;% len=0;
+end
 
 global img diagonalDis;
 
@@ -199,7 +309,6 @@ global img diagonalDis;
 % img(sp(1),sp(2))=0; % Sp should be 0 before tracing, after it's put into svQueue.
 % In case the input sp is an ep.
 ep=sp;
-% len=0;
 
 while (size(nbr1,1)==1 && nbr1(1)~=0) || size(nbr1,1)==2 % normal point will have 1 8-nbr since the previous one is filled!
 	% nbr1 has 2-rows indicates there may be a Ren-shape and the present pos is

@@ -92,16 +92,25 @@ fullSkel=getFullBw(skel);
 skelFile=fullfile(pathstr,[name '.skel.png']);
 imwrite(fullSkel,skelFile,'png');
 
-[bbSubs bbLen bbImg]=getBackbone(skel,0);
+[bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=getBackbone(skel,0);
 clear skel;
 
 % Timer
 toc;
 
-%% Find the pollen and tip radius.
-
 Idist=bwdist(~bw);
 clear bw;
+
+%% Third branch.
+
+% tbDist=Idist.*double(tbImg);
+% tbDist1=tbDist(:);
+% tbProfile=tbDist1(sub2ind(size(tbImg),tbSubs(:,1),tbSubs(:,2)));
+
+%% Find the pollen and tip radius.
+
+% Idist=bwdist(~bw);
+
 bbDist=Idist.*double(bbImg);
 bbDist1=bbDist(:);
 bbProfile=bbDist1(sub2ind(size(bbImg),bbSubs(:,1),bbSubs(:,2)));
@@ -118,6 +127,7 @@ if debugFlag
     figure, plot(bbProfile,'-k');
     hold on;
     plot(bbProfileF,'-r');
+    plot([idxLen idxLen],ylim,'-b'); % branching position.
     hold off;
     legend('Unfiltered Profile','Filtered Profile');
 end
@@ -154,6 +164,7 @@ if debugFlag
     %		plot(col,row,'.w');
     % Show the backbone.
     plot(bbSubs(:,2)+luCorner(2)-1, bbSubs(:,1)+luCorner(1)-1, '.w');
+    plot(tbSubs(:,2)+luCorner(2)-1, tbSubs(:,1)+luCorner(1)-1, '.w');
     % Show the main circles.
     % 		radius=int32(circleCenter(1,3));
     radius=circleCenter(1,3);
@@ -189,7 +200,7 @@ if length(locsS)>=3
 % else
 %     fprintf(1,'There are only two peaks in backbone profile.\n');
 end
-
+fprintf(1,'Third branch length ratio in backbone: %6.2f pixels.\n',ratioInBbSubs);
 end
 
 
@@ -354,35 +365,6 @@ luCol=handles.luCorner(2);
 rlRow=handles.rlCorner(1);
 rlCol=handles.rlCorner(2);
 imgPart=img(luRow:rlRow,luCol:rlCol,:);
-
-end
-
-function bw=keepLargest(bw)
-% Keep the largest connected component.
-
-ver=getVersion;
-
-if ver<=7.5 % matlab 2007b is 7.5.0.
-    [L,Num]=bwlabeln(bw,4);
-    ll=zeros(Num,1);
-    for j=1:Num
-        ll(j)=length(find(L==j));
-    end
-    [mv mi]=max(ll);
-    bw=(L==mi);
-else
-    % Matlab newer version is required!
-    % Matlab said: bwconncomp uses less memory and sometimes faster.
-    CC=bwconncomp(bw,4);
-    ll=zeros(CC.NumObjects,1);
-    for j=1:CC.NumObjects
-        ll(j)=length(CC.PixelIdxList{j});
-    end
-    [mv mi]=max(ll);
-    bw=zeros(size(bw));
-    bw(CC.PixelIdxList{mi})=1;
-    bw=(bw~=0);
-end
 
 end
 
