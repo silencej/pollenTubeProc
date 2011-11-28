@@ -107,7 +107,9 @@ clear bw;
 % tbDist1=tbDist(:);
 % tbProfile=tbDist1(sub2ind(size(tbImg),tbSubs(:,1),tbSubs(:,2)));
 
-%% Find the pollen and tip radius.
+%% Output
+
+% Find the pollen and tip radius.
 
 % Idist=bwdist(~bw);
 
@@ -124,12 +126,17 @@ end
 bbProfile=double(bbProfile);
 bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
 if debugFlag
-    figure, plot(bbProfile,'-k');
+    figure;
+    plot(bbProfile,'-k');
+    set(gca,'TickDir','out','Box','off','YGrid','on'); % Reset axes for printing.
+    set(gcf,'InvertHardCopy','off');
     hold on;
     plot(bbProfileF,'-r');
     plot([idxLen idxLen],ylim,'-b'); % branching position.
     hold off;
-    legend('Unfiltered Profile','Filtered Profile');
+    legend('Unfiltered Profile','Filtered Profile','Branching Point');
+    xlabel('Pixels along backbone');
+    ylabel('Distance transform');
 end
 % Points largest bbProfiles, circleCenter = [row col distanceTransform].
 [pks locs]=findpeaks(bbProfileF);
@@ -159,6 +166,9 @@ if debugFlag
     warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
     % Use warning('query','last'); to see the warning message ID.
     imshow(ori);
+    % Make print the default white plotted line.
+    set(gca,'Color','black');
+    set(gcf,'InvertHardCopy','off');
     %		[row col]=find(bbImg);
     hold on;
     %		plot(col,row,'.w');
@@ -200,7 +210,7 @@ if length(locsS)>=3
 % else
 %     fprintf(1,'There are only two peaks in backbone profile.\n');
 end
-fprintf(1,'Third branch length ratio in backbone: %6.2f pixels.\n',ratioInBbSubs);
+fprintf(1,'Third branch length ratio in backbone: %4.2f from the left bb point in profile.\n',ratioInBbSubs);
 end
 
 
@@ -262,7 +272,7 @@ fprintf(1,'Select a region to add/erase, and double click if finished.\nIf no ne
 set(handles.fH,'Name','Select a region to add/erase, and double click if finished.');
 h=impoly(gca,'Closed',1);
 api=iptgetapi(h);
-pos=api.getPosition;
+pos=api.getPosition();
 mask=poly2mask(pos(:,1),pos(:,2),size(bw,1),size(bw,2));
 while ~isempty(find(mask(:), 1))
     bw=applyMask(mask,bw);
@@ -270,7 +280,7 @@ while ~isempty(find(mask(:), 1))
     fprintf(1,'Select a region of interest, modify, and double click if finished. If no need to correct, just double click.\n');
     h=impoly(gca,'Closed',1);
     api=iptgetapi(h);
-    pos=api.getPosition;
+    pos=api.getPosition();
     mask=poly2mask(pos(:,1),pos(:,2),size(bw,1),size(bw,2));
 end
 
@@ -482,6 +492,7 @@ else
     bw=bw | threRes;
 end
 
+bw=imfill(bw,'holes');
 bw=keepLargest(bw);
 plotBwOnOriPart(bw);
 
