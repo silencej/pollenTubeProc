@@ -57,7 +57,19 @@ end
 
 end
 
-function procImg(imgFile)
+function resStruct=procImg(imgFile)
+% resStruct is a struct:
+% path, filename, bbLen, bubbles, tbLen, tbRatio, bbProfile, tbProfile, 
+% bubbles is an array:
+% [centerRow centerCol radius]
+
+% TODO:
+% Detect pollen. Benefits: 1. avoid problem when branches are longest.
+% 2. the profile has a start point, and the tbRatio too.
+% Wildtype, swollenTip, branching, wavy, swollenTube, budding.
+% SwollenTip: parralell, perpendicular.
+
+% width of tube.
 
 global ori handles luCorner rlCorner debugFlag;
 
@@ -89,12 +101,14 @@ skel=parsiSkel(skel);
 % Save skeleton img.
 fullSkel=getFullBw(skel);
 [pathstr, name]=fileparts(handles.filename);
+resStruct.path=pathstr;
+resStruct.filename=name;
 skelFile=fullfile(pathstr,[name '.skel.png']);
 imwrite(fullSkel,skelFile,'png');
 
 [bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=getBackbone(skel,0);
 clear skel;
-
+                                          
 % Timer
 toc;
 
@@ -323,12 +337,7 @@ function cutFrameFcn
 global handles ori grayOriPart oriPart;
 
 % Get grayOri.
-img1=ori(:,:,1);
-img2=ori(:,:,2);
-img3=ori(:,:,3);
-[mv mi]=max([max(img1(:)) max(img2(:)) max(img3(:))]);
-clear img1 img2 img3;
-grayOri=ori(:,:,mi);
+grayOri=getGrayImg(ori);
 
 bw=(grayOri>handles.thre);
 bw=imfill(bw,'holes');
