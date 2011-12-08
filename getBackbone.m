@@ -47,6 +47,20 @@ while nbrs(1)
     ep=traceToEJ(nbrs);
     nbrs=nbr8(ep);
 end
+
+%-- For classic 4-loop-in-skel.
+% if ep(1)==2520 && ep(2)==1727
+%     hold off;
+%     disp();
+% end
+
+if ep(1)==3579 && ep(2)==862
+    hold off;
+    imshow(bbImg);
+    figure;
+    imshow(img2);
+end
+
 % tbImg=tempImg-img;
 % img=tbImg;
 % tbSubs=getBbSub(sp);
@@ -55,12 +69,13 @@ bbSp=bbSubs(1,:);
 img=img2;
 nbrs=nbr8(sp);
 if size(nbrs,1)==1 % sp is end point.
-    nbrs=nbr8(ep);
-    if size(nbrs,1)==1
-        fprintf(1,'getBackbone: tb ratio can''t cal! ep and sp both end points.\n');
-        ratioInBbSubs=0;
-        return;
-    end
+    % Below can cause error if the thirdBranch is only one point, which is possible.
+%     nbrs=nbr8(ep);
+%     if size(nbrs,1)==1
+%         fprintf(1,'getBackbone: tb ratio can''t cal! ep and sp both end points.\n');
+%         ratioInBbSubs=0;
+%         return;
+%     end
     img=bbImg;
     [len idxLen]=getLenOnLine(bbSp,ep); % tb Joint Point is ep.
 elseif size(nbrs,1)>1
@@ -137,12 +152,20 @@ queIdx=1;
 edges=zeros(1,3);
 while (queIdx<=size(svQueue,1))
 	[ep len]=traceToEJ(svQueue(queIdx,2:3),svQueue(queIdx,4));
+    % If there is only one point in the img, traceToEJ will be stay still.
+    if len==0
+        bbSubs=ep;
+        bbLen=1;
+        bbImg=tempImg;
+        return;
+    end
     
 	if (vertices((vertices(:,2)==ep(1)),3)==ep(2))
 		fprintf(1,'Same vertex label???!!!\n');
 		idx=find(vertices(:,2)==ep(1));
-		fprintf(1,'vertex: %d\t%d\t%d\n',vertices(idx,1),vertices(idx,2),vertices(idx,3));
-		fprintf(1,'ep: %d\t%d\n', ep(1), ep(2));
+		fprintf(1,'vertex. row: %d\t col: %d\t len: %d\n',vertices(idx,1),vertices(idx,2),vertices(idx,3));
+		fprintf(1,'ep. row: %d\t col: %d\n', ep(1), ep(2));
+        error('getBb: Error.');
 	end
 	
 	vNum=vNum+1;
@@ -224,6 +247,7 @@ bbSubs=getBbSub(sp);
 end
 
 function [len idxLen]=getLenOnLine(sp,ep)
+% sp is the first point on the backbone.
 % sp must be an end point!
 % ep may not reside on the line but contact it instead.
 global img diagonalDis;
@@ -238,10 +262,19 @@ else
 end
 dis=abs(ep(1)-nbrs(1))+abs(ep(2)-nbrs(2));
 
-while dis>2
+% This is a classic 4-loop-in-skel problem. Hope it's rare!
+% if ep(1)==2520 && ep(2)==1727
+%     disp();
+% end
+
+% while dis>2
+% dis>3, for the classic 4-loop-in-skel problem.
+while dis>3
     sp=nbrs(1,:); % Backbone img may have Ren-shape joint!
     [nbrs isNbr4]=nbr8(sp);
     if nbrs(1)==0
+        fprintf(1,'Sp: %d %d. Ep: %d %d.\n',sp(1),sp(2),ep(1),ep(2));
+        imwrite(img,'getLenOnLineError.png','png');
         error('getLenOnLine: Traced to the end point, No contact?\n');
     end
     img(sp(1),sp(2))=0;
@@ -385,9 +418,9 @@ px=p(2); % col
 py=p(1); % row
 nbrs=[0 0];
 isNbr4=2;
-% 4-way nbrs.
+% 4-way nbrs. Order: N, E, S, W.
 nbrsIdx4=[py-1 px; py px+1; py+1 px; py px-1];
-% Other 8-nbrs except 4-nbrs.
+% Other 8-nbrs except 4-nbrs. Order: NE, SE, SW, NW.
 nbrsIdx8=[py-1 px+1; py+1 px+1; py+1 px-1; py-1 px-1];
 nbrsIdx4=cleanNbrs(nbrsIdx4);
 nbrsIdx8=cleanNbrs(nbrsIdx8);

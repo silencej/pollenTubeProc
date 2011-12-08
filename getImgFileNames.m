@@ -1,5 +1,10 @@
-function filenames=getImgFileNames
+function filenames=getImgFileNames(filterSpec)
 % filenames will always be a cell array.
+% filterSpec should be like {'*.png;*.PNG','Images';'*.*','All'}.
+
+if nargin==0
+    filterSpec={'*.png;*.PNG;*.jpg;*.jpeg;*.JPG;*.JPEG;*.tif;*.tiff;*.TIF;*.TIFF','Images';'*.*','All'};
+end
 
 % Open path history.
 oldDir='./';
@@ -12,7 +17,7 @@ if ~ischar(oldDir)
 	oldDir='./';
 end
 
-[filename,pathname] = uigetfile({'*.png;*.PNG;*.jpg;*.jpeg;*.JPG;*.JPEG;*.tif;*.tiff;*.TIF;*.TIFF','Images';'*.*','All'},'Select Images',oldDir,'multiselect','on');
+[filename,pathname] = uigetfile(filterSpec,'Select Images',oldDir,'multiselect','on');
 
 if isequal(filename,0)
 	disp('User Pressed Cancel.');

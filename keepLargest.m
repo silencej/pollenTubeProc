@@ -1,6 +1,7 @@
 function bw=keepLargest(bw,nbrWay)
 % bw=keepLargest(bw,nbrWay)
-% Keep the largest connected component.
+% Keep the largest connected component. If there are two comp with same
+% area, just leave one.
 % If nbrWay is not input, the connectness is based on 4-way neighbouring.
 
 if nargin<2

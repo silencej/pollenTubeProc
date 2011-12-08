@@ -1,96 +1,109 @@
-function getLenFromBig
+function preproBig(thre)
 
-global rowTileNum colTileNum debugFlag verNum;
+global rowTileNum colTileNum debugFlag areaMin verNum;
+
+if nargin<1
+    thre=18;
+end
 
 % Parameters.
 rowTileNum=7;
 colTileNum=7;
 debugFlag=1;
-verNum=3; % skeleton ver num.
+areaMin=200;
+verNum=5; % skeleton ver num.
 
 close all;
 warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
-warning off all;
 iptsetpref('ImshowBorder','tight'); % Make imshow display no border and thus print will save no white border.
 
-files=getImgFileNames({'*.bw.png','Bitwise Image'});
+files=getImgFileNames;
 if files{1}==0
     return;
 end
 
+% if length(files)>1
+%     fprintf(1,'Multiple image input, thus no plot output.\n');
+%     return;
+% end
 
 for i=1:length(files)
-    getLenFromFile(files{1});
+    preproFile(files{1},thre);
 end
 
 end
 
-function getLenFromFile(filename)
-% Get lengths.
+function preproFile(filename,thre)
 
-bw=imread(filename);
+global areaMin;
 
-if ~islogical(bw)
-    fsprintf(1,'getLenFromFile: %s is not logical, but %s\n',filename,class(bw));
-    bw=bw~=0;
-end
+img=imread(filename);
+grayImg=getGrayImg(img);
+% bw=otsuThreImg(grayImg);
+bw=(grayImg>thre);
 
-res=getLength(bw);
+% if debugFlag
+%     figure,imshow(img);
+% end
 
-% Save result: count textfile and image.
+% testBw=bw(1348:1485,2884:2990);
+
+% res=bwmorph(testBw,'thin',inf);
+% figure,imshow(res);
+
+% rBw=~testBw;
+% dis=bwdist(rBw);
+
+% figure,imshow(testBw);
+% figure,imshow(dis,[]);
+
+% img=putTileGrid(img);
+
+% figure,imshow(img);
+
+%% Clear single point.
+
+bw=bwmorph(bw,'clean',8);
+
+%% Clear border.
+
+bw=clearTileBorder(bw);
+
+%% Delete connected pollen.
+
+pollen=findPollen(bw,5);
+
+% figure,imshow(bw);
+
+% figure,imshow(putOnImg(img,pollen(:,1:2)));
+
+% hold on;
+% for i=size(pollen,1)
+%     rectangle('Position',[pollen(i,2)-pollen(i,3) pollen(i,1)-pollen(i,3) 2*pollen(i,3) 2*pollen(i,3)],'Curvature',[1 1],'EdgeColor','r');
+%     plot(pollen(i,2),pollen(i,1),'or');
+% end
+% hold off;
+
+[bw L pollen]=deleteConPollen(bw,pollen);
+
+L=keepOnlyPollen(pollen,L,areaMin);
+bw=L~=0;
+
+bw=imfill(bw,'holes');
+
 [pathstr, name]=fileparts(filename);
-[tempstr, name]=fileparts(name);
-imageFile=fullfile(pathstr,[name '_res.png']);
-% imsave(gca,imageFile,'png');
-print('-dpng', '-r300',imageFile);
-countFile=fullfile(pathstr,[name '.txt']);
-fid=fopen(countFile,'w');
-fprintf(fid,'%6.2f\n',res(:,3));
-fclose(fid);
+bwFile=fullfile(pathstr,[name '.bw.png']);
+imwrite(bw,bwFile,'png');
+
+% Get lengths.
+% res=getLength(bw,pollen);
+
+% figure,imshow(bw);
 
 end
 
 %%
 
-function res=getLength(bw)
-
-global verNum;
-
-addpath(genpath('BaiSkeletonPruningDCE/'));
-
-[L Lnum]=bwlabel(bw,8);
-% res: [centerRow, centerCol, length].
-res=zeros(Lnum,3);
-
-% if size(pollen,1)~=Lnum
-%     fprintf(1,'pollenNum ~= Lnum!\n');
-%     pause;
-% end
-
-% figure,imshow(bw);
-
-figure;
-imshow(bw);
-hold on;
-
-for i=1:Lnum
-%     labelNum=L(pollen(i,1),pollen(i,2));
-%     mask=L==labelNum;
-    mask=L==i;
-    [skel]=div_skeleton_new(4,1,~mask,verNum);
-    skel=(skel~=0); % Convert the unit8 to logical.
-    skel=parsiSkel(skel);
-    [bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=getBackbone(skel,0);
-%     res(i,:)=[pollen(i,1) pollen(i,2) bbLen];
-    res(i,:)=[bbSubs(1,1) bbSubs(1,2) bbLen];
-    
-    plot(bbSubs(:,2),bbSubs(:,1),'.r','MarkerSize',1);
-end
-
-end
-
-
-%% Back up.
 function pollen=findPollen(bw, radMin)
 % pollen format:
 % [rowPos, colPos, pollenRad]
@@ -278,3 +291,35 @@ pollen=tempPollen;
 
 end
 
+function res=getLength(bw,pollen)
+
+global verNum;
+
+addpath(genpath('BaiSkeletonPruningDCE/'));
+
+[L Lnum]=bwlabel(bw,8);
+% res: [centerRow, centerCol, length].
+res=zeros(Lnum,3);
+
+if size(pollen,1)~=Lnum
+    fprintf(1,'pollenNum ~= Lnum!\n');
+    pause;
+end
+
+figure;
+hold on;
+imshow(bw);
+
+for i=1:Lnum
+    labelNum=L(pollen(i,1),pollen(i,2));
+    mask=L==labelNum;
+    [skel]=div_skeleton_new(4,1,~mask,verNum);
+    skel=(skel~=0); % Convert the unit8 to logical.
+    skel=parsiSkel(skel);
+    [bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=getBackbone(skel,0);
+    res(i,:)=[pollen(i,1) pollen(i,2) bbLen];
+    
+    plot(bbSubs(2,:),bbSubs(1,:),'.r');
+end
+
+end
