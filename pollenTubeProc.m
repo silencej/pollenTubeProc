@@ -39,11 +39,11 @@ handles.cutMargin=10; % cut to make the result have 10 pixel margin.
 
 files=getImgFileNames;
 if files{1}==0
-    return;
+	return;
 end
 if length(files)>1
-    debugFlag=0;
-    fprintf(1,'Multiple image input, thus no plot output.\n');
+	debugFlag=0;
+	fprintf(1,'Multiple image input, thus no plot output.\n');
 end
 
 addpath(genpath('BaiSkeletonPruningDCE/'));
@@ -52,7 +52,7 @@ warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
 iptsetpref('ImshowBorder','tight'); % Make imshow display no border and thus print will save no white border.
 
 for i=1:length(files)
-    procImg(files{i});
+	procImg(files{i});
 end
 
 end
@@ -108,7 +108,7 @@ imwrite(fullSkel,skelFile,'png');
 
 [bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=getBackbone(skel,0);
 clear skel;
-                                          
+										  
 % Timer
 toc;
 
@@ -133,24 +133,24 @@ bbProfile=bbDist1(sub2ind(size(bbImg),bbSubs(:,1),bbSubs(:,2)));
 % The length of the input x must be more than three times the filter
 % order in filtfilt.
 if length(bbProfile)>3*48
-    winLen=48;
+	winLen=48;
 else
-    winLen=floor(length(bbProfile)/3);
+	winLen=floor(length(bbProfile)/3);
 end
 bbProfile=double(bbProfile);
 bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
 if debugFlag
-    figure;
-    plot(bbProfile,'-k');
-    set(gca,'TickDir','out','Box','off','YGrid','on'); % Reset axes for printing.
-    set(gcf,'InvertHardCopy','off');
-    hold on;
-    plot(bbProfileF,'-r');
-    plot([idxLen idxLen],ylim,'-b'); % branching position.
-    hold off;
-    legend('Unfiltered Profile','Filtered Profile','Branching Point');
-    xlabel('Pixels along backbone');
-    ylabel('Distance transform');
+	figure;
+	plot(bbProfile,'-k');
+	set(gca,'TickDir','out','Box','off','YGrid','on'); % Reset axes for printing.
+	set(gcf,'InvertHardCopy','off');
+	hold on;
+	plot(bbProfileF,'-r');
+	plot([idxLen idxLen],ylim,'-b'); % branching position.
+	hold off;
+	legend('Unfiltered Profile','Filtered Profile','Branching Point');
+	xlabel('Pixels along backbone');
+	ylabel('Distance transform');
 end
 % Points largest bbProfiles, circleCenter = [row col distanceTransform].
 [pks locs]=findpeaks(bbProfileF);
@@ -161,68 +161,68 @@ locsS=locs(I);
 circleCenter(1,1:2)=bbSubs(locsS(1),:);
 circleCenter(1,3)=pksS(1);
 if length(locsS)>=2
-    circleCenter(2,1:2)=bbSubs(locsS(2),:);
-    circleCenter(2,3)=pksS(2);
+	circleCenter(2,1:2)=bbSubs(locsS(2),:);
+	circleCenter(2,3)=pksS(2);
 end
 if length(locsS)>=3
-    circleCenter(3,1:2)=bbSubs(locsS(3),:);
-    circleCenter(3,3)=pksS(3);
+	circleCenter(3,1:2)=bbSubs(locsS(3),:);
+	circleCenter(3,3)=pksS(3);
 end
 
-%     % Correct backbone length by radius.
-%     bbLen=bbLen-circleCenter(1,3)-circleCenter(2,3);
+%	 % Correct backbone length by radius.
+%	 bbLen=bbLen-circleCenter(1,3)-circleCenter(2,3);
 
 % Draw circles.
 if debugFlag
-    luCorner=handles.luCorner;
-    rlCorner=handles.rlCorner;
-    figure;
-    warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
-    % Use warning('query','last'); to see the warning message ID.
-    imshow(ori);
-    % Make print the default white plotted line.
-    set(gca,'Color','black');
-    set(gcf,'InvertHardCopy','off');
-    %		[row col]=find(bbImg);
-    hold on;
-    %		plot(col,row,'.w');
-    % Show the backbone.
-    plot(bbSubs(:,2)+luCorner(2)-1, bbSubs(:,1)+luCorner(1)-1, '.w');
-    plot(tbSubs(:,2)+luCorner(2)-1, tbSubs(:,1)+luCorner(1)-1, '.w');
-    % Show the main circles.
-    % 		radius=int32(circleCenter(1,3));
-    radius=circleCenter(1,3);
-    row=circleCenter(1,1)-radius+luCorner(1)-1;
-    col=circleCenter(1,2)-radius+luCorner(2)-1;
-    rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
-    plot(col+radius,row+radius,'or'); % plot center.
-    if length(locsS)>=2
-        radius=circleCenter(2,3);
-        row=circleCenter(2,1)-radius+luCorner(1)-1;
-        col=circleCenter(2,2)-radius+luCorner(2)-1;
-        rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
-        plot(col+radius,row+radius,'oc');
-    end
-    if length(locsS)>=3
-        radius=circleCenter(3,3);
-        row=circleCenter(3,1)-radius+luCorner(1)-1;
-        col=circleCenter(3,2)-radius+luCorner(2)-1;
-        rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','b');
-        plot(col+radius,row+radius,'ob');
-    end
-    hold off;
+	luCorner=handles.luCorner;
+	rlCorner=handles.rlCorner;
+	figure;
+	warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
+	% Use warning('query','last'); to see the warning message ID.
+	imshow(ori);
+	% Make print the default white plotted line.
+	set(gca,'Color','black');
+	set(gcf,'InvertHardCopy','off');
+	%		[row col]=find(bbImg);
+	hold on;
+	%		plot(col,row,'.w');
+	% Show the backbone.
+	plot(bbSubs(:,2)+luCorner(2)-1, bbSubs(:,1)+luCorner(1)-1, '.w');
+	plot(tbSubs(:,2)+luCorner(2)-1, tbSubs(:,1)+luCorner(1)-1, '.w');
+	% Show the main circles.
+	% 		radius=int32(circleCenter(1,3));
+	radius=circleCenter(1,3);
+	row=circleCenter(1,1)-radius+luCorner(1)-1;
+	col=circleCenter(1,2)-radius+luCorner(2)-1;
+	rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
+	plot(col+radius,row+radius,'or'); % plot center.
+	if length(locsS)>=2
+		radius=circleCenter(2,3);
+		row=circleCenter(2,1)-radius+luCorner(1)-1;
+		col=circleCenter(2,2)-radius+luCorner(2)-1;
+		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
+		plot(col+radius,row+radius,'oc');
+	end
+	if length(locsS)>=3
+		radius=circleCenter(3,3);
+		row=circleCenter(3,1)-radius+luCorner(1)-1;
+		col=circleCenter(3,2)-radius+luCorner(2)-1;
+		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','b');
+		plot(col+radius,row+radius,'ob');
+	end
+	hold off;
 end
 
 fprintf(1,'Image: %s\n',handles.filename);
 fprintf(1,'Backbone Euclidean Length: %6.2f pixels.\n',bbLen);
 fprintf(1,'Largest radius (red circle): %6.2f pixels.\n',circleCenter(1,3));
 if length(locsS)>=2
-    fprintf(1,'Second largest radius (cyan circle): %6.2f pixels.\n',circleCenter(2,3));
+	fprintf(1,'Second largest radius (cyan circle): %6.2f pixels.\n',circleCenter(2,3));
 end
 if length(locsS)>=3
-    fprintf(1,'Third largest radius (blue circle): %6.2f pixels.\n',circleCenter(3,3));
+	fprintf(1,'Third largest radius (blue circle): %6.2f pixels.\n',circleCenter(3,3));
 % else
-%     fprintf(1,'There are only two peaks in backbone profile.\n');
+%	 fprintf(1,'There are only two peaks in backbone profile.\n');
 end
 fprintf(1,'Third branch length ratio in backbone: %4.2f from the left bb point in profile.\n',ratioInBbSubs);
 end
@@ -245,37 +245,57 @@ hasBwFile=0;
 [pathstr, name]=fileparts(handles.filename);
 bwFile=fullfile(pathstr,[name '.bw.png']);
 if exist(bwFile,'file')
-    bwFull=imread(bwFile);
-    bwFull=(bwFull~=0);
-    hasBwFile=1;
-    bw=getPart(bwFull);
-    plotBwOnOriPart(bw);
+	bwFull=imread(bwFile);
+	bwFull=(bwFull~=0);
+	hasBwFile=1;
+	bw=getPart(bwFull);
+	plotBwOnOriPart(bw);
 end
 
 %% Apply thre.
 
 if ~hasBwFile
-    % Read thre from threFile.
-    % thre [-1 254].
-    [pathstr, name]=fileparts(handles.filename);
-    threFile=fullfile(pathstr,[name '.thre']);
-    if exist(threFile,'file')
-        fid=fopen(threFile,'rt');
-        handles.thre=fscanf(fid,'%d');
-        fclose(fid);
-        if length(handles.thre)>1
-            disp('pollenTubeProc: preprocess: threshold file contains more than 1 threshold.');
-        end
-    end    
-    bw=applyThre(handles.thre);
-    fprintf(1,'======================================================================\nThe present threshold is %d.\n',handles.thre);
-    reply=input('If you want to reset the threshold, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
-    while ~isempty(reply)
-        handles.thre=uint8(str2double(reply));
-        bw=applyThre(handles.thre);
-        fprintf(1,'======================================================================\nThe present threshold is %d.\n',handles.thre);
-        reply=input('If you want to reset the threshold, input here in range [0 254].\nIf the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
-    end
+	% Read thre from threFile.
+	% thre [-1 254].
+	[pathstr, name]=fileparts(handles.filename);
+	threFile=fullfile(pathstr,[name '.thre']);
+	if exist(threFile,'file')
+		fid=fopen(threFile,'rt');
+		handles.thre=fscanf(fid,'%d');
+		oldPos=fscanf(fid,'%d', [1,2]); % pollen position: [row col].
+		if ~isempty(oldPos)
+			handles.pollenPos=oldPos;
+		else
+			handles.pollenPos=[30; 30];
+		end
+		fclose(fid);
+		if length(handles.thre)>1
+			disp('pollenTubeProc: preprocess: threshold file contains more than 1 threshold.');
+		end
+	end
+
+	plotPollen(handles.pollenPos);
+	fprintf(1,'----------------------------------------------------------------------\nThe present threshold is %d %d.\n',handles.pollenPos(1),handles.pollenPos(2));
+	fprintf(1,'If you want to reset the pollen indicator, left click in the image.\nOtherwise if the position is ok, right click on the image.');
+	[col row button]=ginput(1);
+	% 1,2,3: left, middle, right.
+	while button~=3
+		plotPollen([row col]);
+		fprintf(1,'----------------------------------------------------------------------\nThe present threshold is %d %d.\n',handles.pollenPos(1),handles.pollenPos(2));
+		fprintf(1,'If you want to reset the pollen indicator, left click in the image.\nOtherwise if the position is ok, right click on the image.');
+		[col row button]=ginput(1);
+	end
+	handles.pollenPos=[row; col];
+
+	bw=applyThre(handles.thre);
+	fprintf(1,'======================================================================\nThe present threshold is %d.\n',handles.thre);
+	reply=input('If you want to reset the threshold, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+	while ~isempty(reply)
+		handles.thre=uint8(str2double(reply));
+		bw=applyThre(handles.thre);
+		fprintf(1,'======================================================================\nThe present threshold is %d.\n',handles.thre);
+		reply=input('If you want to reset the threshold, input here in range [0 254].\nIf the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+	end
 end
 
 %% Apply manual correction.
@@ -289,13 +309,13 @@ api=iptgetapi(h);
 pos=api.getPosition();
 mask=poly2mask(pos(:,1),pos(:,2),size(bw,1),size(bw,2));
 while ~isempty(find(mask(:), 1))
-    bw=applyMask(mask,bw);
-    fprintf(1,'======================================================================\nManual correction for the bitmap.\n');
-    fprintf(1,'Select a region of interest, modify, and double click if finished. If no need to correct, just double click.\n');
-    h=impoly(gca,'Closed',1);
-    api=iptgetapi(h);
-    pos=api.getPosition();
-    mask=poly2mask(pos(:,1),pos(:,2),size(bw,1),size(bw,2));
+	bw=applyMask(mask,bw);
+	fprintf(1,'======================================================================\nManual correction for the bitmap.\n');
+	fprintf(1,'Select a region of interest, modify, and double click if finished. If no need to correct, just double click.\n');
+	h=impoly(gca,'Closed',1);
+	api=iptgetapi(h);
+	pos=api.getPosition();
+	mask=poly2mask(pos(:,1),pos(:,2),size(bw,1),size(bw,2));
 end
 
 %% 
@@ -324,11 +344,11 @@ bw(:,end-cutMargin+1:end)=0;
 threFile=fullfile(pathstr,[name '.thre']);
 fid=fopen(threFile,'w');
 fprintf(fid,'%d',handles.thre);
+fprintf(fid,'\n%d\t%d',handles.pollenPos(1),handles.pollenPos(2));
 fclose(fid);
 bwFile=fullfile(pathstr,[name '.bw.png']);
 bwFull=getFullBw(bw);
 imwrite(bwFull,bwFile,'png');
-
 
 end
 
@@ -366,9 +386,9 @@ function bwFull=getFullBw(bw)
 global handles ori;
 
 if ndims(bw)>2
-    fprintf(1,'getFullBw: bw is not two-dimensional!\n');
-    bwFull=0;
-    return;
+	fprintf(1,'getFullBw: bw is not two-dimensional!\n');
+	bwFull=0;
+	return;
 end
 
 bwFull=[zeros(handles.luCorner(1)-1,size(bw,2)); bw; zeros(size(ori,1)-handles.rlCorner(1),size(bw,2))];
@@ -447,6 +467,23 @@ luCorner=[luRow luCol];
 rlCorner=[rlRow rlCol];
 end
 
+function plotPollen(pos)
+
+global oriPart;
+
+if ~isfield(handles,'fH') || ~ishandle(handles.fH)
+	handles.fH=figure;
+end
+
+figure(handles.fH);
+
+imshow(oriPart);
+hold on;
+plot(pos(2),pos(1),'or','MarkerFaceColor','r','MarkerSize',9);
+hold off;
+
+end
+
 function bw=applyThre(thre)
 
 global grayOriPart;
@@ -475,30 +512,30 @@ minusBw=mask.*(~bw);
 minusBw=(minusBw~=0);
 % If the ROI contains mostly bw's 1s', the ROI is used to erase.
 if length(find(andBw(:)))>=length(find(minusBw(:)))
-    window=double(grayOriPart.*uint8(andBw));
-    window1d=window(andBw(:)~=0);
-    winThre=median(window1d)+eraseFactor*1.4826*mad(window1d,1);
-    se=strel('disk',diskSize);
-    bigMask=imdilate(mask,se);
-    threRes=(grayOriPart<winThre);
-    threRes=threRes & bigMask;
-    threRes=threRes | mask;
-    [r c]=ind2sub(size(mask),find(mask,1));
-    threRes=bwselect(threRes,c,r,8);
-    bw=bw - ( bw & threRes);
-    % If the ROI contains mostly bw's 0s', the ROI is used to add.
+	window=double(grayOriPart.*uint8(andBw));
+	window1d=window(andBw(:)~=0);
+	winThre=median(window1d)+eraseFactor*1.4826*mad(window1d,1);
+	se=strel('disk',diskSize);
+	bigMask=imdilate(mask,se);
+	threRes=(grayOriPart<winThre);
+	threRes=threRes & bigMask;
+	threRes=threRes | mask;
+	[r c]=ind2sub(size(mask),find(mask,1));
+	threRes=bwselect(threRes,c,r,8);
+	bw=bw - ( bw & threRes);
+	% If the ROI contains mostly bw's 0s', the ROI is used to add.
 else
-    window=double(grayOriPart.*uint8(minusBw));
-    window1d=window(minusBw(:)~=0);
-    winThre=median(window1d)-addFactor*1.4826*mad(window1d,1);
-    se=strel('disk',diskSize);
-    bigMask=imdilate(mask,se);
-    threRes=(grayOriPart>winThre);
-    threRes=threRes & bigMask;
-    threRes=threRes | mask;
-    [r c]=ind2sub(size(mask),find(mask,1));
-    threRes=bwselect(threRes,c,r,8); % bwselect is odd! first c then r!!
-    bw=bw | threRes;
+	window=double(grayOriPart.*uint8(minusBw));
+	window1d=window(minusBw(:)~=0);
+	winThre=median(window1d)-addFactor*1.4826*mad(window1d,1);
+	se=strel('disk',diskSize);
+	bigMask=imdilate(mask,se);
+	threRes=(grayOriPart>winThre);
+	threRes=threRes & bigMask;
+	threRes=threRes | mask;
+	[r c]=ind2sub(size(mask),find(mask,1));
+	threRes=bwselect(threRes,c,r,8); % bwselect is odd! first c then r!!
+	bw=bw | threRes;
 end
 
 bw=imfill(bw,'holes');
@@ -511,7 +548,7 @@ function plotBwOnOriPart(bw)
 global handles oriPart;
 
 if ~isfield(handles,'fH') || ~ishandle(handles.fH)
-    handles.fH=figure;
+	handles.fH=figure;
 end
 
 figure(handles.fH);

@@ -291,35 +291,3 @@ pollen=tempPollen;
 
 end
 
-function res=getLength(bw,pollen)
-
-global verNum;
-
-addpath(genpath('BaiSkeletonPruningDCE/'));
-
-[L Lnum]=bwlabel(bw,8);
-% res: [centerRow, centerCol, length].
-res=zeros(Lnum,3);
-
-if size(pollen,1)~=Lnum
-    fprintf(1,'pollenNum ~= Lnum!\n');
-    pause;
-end
-
-figure;
-hold on;
-imshow(bw);
-
-for i=1:Lnum
-    labelNum=L(pollen(i,1),pollen(i,2));
-    mask=L==labelNum;
-    [skel]=div_skeleton_new(4,1,~mask,verNum);
-    skel=(skel~=0); % Convert the unit8 to logical.
-    skel=parsiSkel(skel);
-    [bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=getBackbone(skel,0);
-    res(i,:)=[pollen(i,1) pollen(i,2) bbLen];
-    
-    plot(bbSubs(2,:),bbSubs(1,:),'.r');
-end
-
-end
