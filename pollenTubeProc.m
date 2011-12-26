@@ -252,15 +252,15 @@ if exist(bwFile,'file')
 	plotBwOnOriPart(bw);
 end
 
-%% Apply thre.
+%% Read Anno file.
 
 if ~hasBwFile
-	% Read thre from threFile.
+	% Read thre and pollenPos from annoFile.
 	% thre [-1 254].
 	[pathstr, name]=fileparts(handles.filename);
-	threFile=fullfile(pathstr,[name '.thre']);
-	if exist(threFile,'file')
-		fid=fopen(threFile,'rt');
+	annoFile=fullfile(pathstr,[name '.anno']);
+	if exist(annoFile,'file')
+		fid=fopen(annoFile,'rt');
 		handles.thre=fscanf(fid,'%d');
 		oldPos=fscanf(fid,'%d', [1,2]); % pollen position: [row col].
 		if ~isempty(oldPos)
@@ -273,6 +273,8 @@ if ~hasBwFile
 			disp('pollenTubeProc: preprocess: threshold file contains more than 1 threshold.');
 		end
 	end
+
+%% Apply thre.
 
 	plotPollen(handles.pollenPos);
 	fprintf(1,'----------------------------------------------------------------------\nThe present threshold is %d %d.\n',handles.pollenPos(1),handles.pollenPos(2));
@@ -341,8 +343,8 @@ bw(:,end-cutMargin+1:end)=0;
 %% Save to file.
 
 [pathstr, name]=fileparts(handles.filename);
-threFile=fullfile(pathstr,[name '.thre']);
-fid=fopen(threFile,'w');
+annoFile=fullfile(pathstr,[name '.anno']);
+fid=fopen(annoFile,'w');
 fprintf(fid,'%d',handles.thre);
 fprintf(fid,'\n%d\t%d',handles.pollenPos(1),handles.pollenPos(2));
 fclose(fid);
