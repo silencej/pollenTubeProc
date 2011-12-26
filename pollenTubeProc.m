@@ -274,7 +274,7 @@ if ~hasBwFile
 		end
 	end
 
-%% Apply thre.
+%% Adjust pollenPos.
 
 	plotPollen(handles.pollenPos);
 	fprintf(1,'----------------------------------------------------------------------\nThe present threshold is %d %d.\n',handles.pollenPos(1),handles.pollenPos(2));
@@ -288,6 +288,8 @@ if ~hasBwFile
 		[col row button]=ginput(1);
 	end
 	handles.pollenPos=[row; col];
+
+%% Adjust thre.
 
 	bw=applyThre(handles.thre);
 	fprintf(1,'======================================================================\nThe present threshold is %d.\n',handles.thre);
