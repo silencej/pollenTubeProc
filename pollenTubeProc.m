@@ -240,6 +240,45 @@ global handles;
 %% Cut frame.
 cutFrameFcn;
 
+
+%% Read Anno file.
+
+% Read thre and pollenPos from annoFile.
+% thre [-1 254].
+[pathstr, name]=fileparts(handles.filename);
+annoFile=fullfile(pathstr,[name '.anno']);
+if exist(annoFile,'file')
+    fid=fopen(annoFile,'rt');
+    handles.thre=fscanf(fid,'%d');
+    oldPos=fscanf(fid,'%d', [1,2]); % pollen position: [row col].
+    if ~isempty(oldPos)
+        handles.pollenPos=oldPos;
+    else
+        handles.pollenPos=[30; 30];
+    end
+    fclose(fid);
+    if length(handles.thre)>1
+        disp('pollenTubeProc: preprocess: threshold file contains more than 1 threshold.');
+    end
+end
+
+%% Adjust pollenPos.
+
+plotPollen(handles.pollenPos);
+fprintf(1,'----------------------------------------------------------------------\nThe present threshold is %d %d.\n',handles.pollenPos(1),handles.pollenPos(2));
+fprintf(1,'If you want to reset the pollen indicator, left click in the image.\nOtherwise if the position is ok, right click on the image.\n');
+[col row button]=ginput(1);
+% 1,2,3: left, middle, right.
+while button~=3
+    plotPollen([row col]);
+    handles.pollenPos(1)=row;
+    handles.pollenPos(2)=col;
+    fprintf(1,'----------------------------------------------------------------------\nThe present threshold is %d %d.\n',handles.pollenPos(1),handles.pollenPos(2));
+    fprintf(1,'If you want to reset the pollen indicator, left click in the image.\nOtherwise if the position is ok, right click on the image.\n');
+    [col row button]=ginput(1);
+end
+% handles.pollenPos=[row; col];
+
 %% Read bw file.
 hasBwFile=0;
 [pathstr, name]=fileparts(handles.filename);
@@ -252,57 +291,22 @@ if exist(bwFile,'file')
 	plotBwOnOriPart(bw);
 end
 
-%% Read Anno file.
-
-if ~hasBwFile
-	% Read thre and pollenPos from annoFile.
-	% thre [-1 254].
-	[pathstr, name]=fileparts(handles.filename);
-	annoFile=fullfile(pathstr,[name '.anno']);
-	if exist(annoFile,'file')
-		fid=fopen(annoFile,'rt');
-		handles.thre=fscanf(fid,'%d');
-		oldPos=fscanf(fid,'%d', [1,2]); % pollen position: [row col].
-		if ~isempty(oldPos)
-			handles.pollenPos=oldPos;
-		else
-			handles.pollenPos=[30; 30];
-		end
-		fclose(fid);
-		if length(handles.thre)>1
-			disp('pollenTubeProc: preprocess: threshold file contains more than 1 threshold.');
-		end
-	end
-
-%% Adjust pollenPos.
-
-	plotPollen(handles.pollenPos);
-	fprintf(1,'----------------------------------------------------------------------\nThe present threshold is %d %d.\n',handles.pollenPos(1),handles.pollenPos(2));
-	fprintf(1,'If you want to reset the pollen indicator, left click in the image.\nOtherwise if the position is ok, right click on the image.');
-	[col row button]=ginput(1);
-	% 1,2,3: left, middle, right.
-	while button~=3
-		plotPollen([row col]);
-		fprintf(1,'----------------------------------------------------------------------\nThe present threshold is %d %d.\n',handles.pollenPos(1),handles.pollenPos(2));
-		fprintf(1,'If you want to reset the pollen indicator, left click in the image.\nOtherwise if the position is ok, right click on the image.');
-		[col row button]=ginput(1);
-	end
-	handles.pollenPos=[row; col];
-
 %% Adjust thre.
 
-	bw=applyThre(handles.thre);
-	fprintf(1,'======================================================================\nThe present threshold is %d.\n',handles.thre);
-	reply=input('If you want to reset the threshold, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
-	while ~isempty(reply)
-		handles.thre=uint8(str2double(reply));
-		bw=applyThre(handles.thre);
-		fprintf(1,'======================================================================\nThe present threshold is %d.\n',handles.thre);
-		reply=input('If you want to reset the threshold, input here in range [0 254].\nIf the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
-	end
+if ~hasBwFile
+    bw=applyThre(handles.thre);
+    fprintf(1,'======================================================================\nThe present threshold is %d.\n',handles.thre);
+    reply=input('If you want to reset the threshold, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+    while ~isempty(reply)
+        handles.thre=uint8(str2double(reply));
+        bw=applyThre(handles.thre);
+        fprintf(1,'======================================================================\nThe present threshold is %d.\n',handles.thre);
+        reply=input('If you want to reset the threshold, input here in range [0 254].\nIf the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+    end
+    
 end
 
-%% Apply manual correction.
+%% Adjust mask.
 
 figure(handles.fH);
 fprintf(1,'======================================================================\nManual correction for the bitmap.\n');
@@ -322,7 +326,8 @@ while ~isempty(find(mask(:), 1))
 	mask=poly2mask(pos(:,1),pos(:,2),size(bw,1),size(bw,2));
 end
 
-%% 
+%% Finish Manual Anno.
+
 delete(h);
 close(handles.fH);
 fprintf(1,'User correction finished. Now processing, please wait...\n');
@@ -348,7 +353,7 @@ bw(:,end-cutMargin+1:end)=0;
 annoFile=fullfile(pathstr,[name '.anno']);
 fid=fopen(annoFile,'w');
 fprintf(fid,'%d',handles.thre);
-fprintf(fid,'\n%d\t%d',handles.pollenPos(1),handles.pollenPos(2));
+fprintf(fid,'\n%d\t%d',floor(handles.pollenPos(1)),floor(handles.pollenPos(2)));
 fclose(fid);
 bwFile=fullfile(pathstr,[name '.bw.png']);
 bwFull=getFullBw(bw);
@@ -473,7 +478,7 @@ end
 
 function plotPollen(pos)
 
-global oriPart;
+global oriPart handles;
 
 if ~isfield(handles,'fH') || ~ishandle(handles.fH)
 	handles.fH=figure;
