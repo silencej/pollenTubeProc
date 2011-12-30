@@ -15,17 +15,38 @@ if length(D)==1
 end
 
 % Find the end point closest to pollenPos.
+shortDist=inf;
+gImg=skelImg;
+epIdx=0;
+for i=1:size(vertices,1)
+	nbr=nbr8(vertices(i,2:3));
+	if size(nbr,1)==1 % end point vertex.
+		dist=euDist(vertices(i,2:3),pollenPos);
+		if dist<shortDist
+			shortDist=dist;
+			epIdx=i;
+		end
+	end
+end
 
-[Y I]=max(D(:));
-bbLen=Y;
-[row col]=ind2sub(size(D),I);
-sp=vertices(row,2:3);
-ep=vertices(col,2:3);
+if epIdx==0 % If the pollenPos can't specify an end point, the longest path is used.
+	[Y I]=max(D(:));
+	bbLen=Y;
+	[row col]=ind2sub(size(D),I);
+	sp=vertices(row,2:3);
+	ep=vertices(col,2:3);
+else % Choose the longest path passing pollenPos.
+	[Y I]=max(D(:,epIdx));
+	bbLen=Y;
+	sp=vertices(epIdx,2:3);
+	ep=vertices(I,2:3);
+end
 
+%% Get bbImg.
 gImg=skelImg;
 
 for i=1:size(vertices,1)
-	if i==row || i==col
+	if i==I || i==epIdx
 		continue;
 	end
 	nbrs=nbr8(vertices(i,2:3));
@@ -83,3 +104,10 @@ end
 
 end
 
+function dis=euDist(sp,ep)
+% Calculate the Eucledian distance.
+% sp: start point. ep: end point.
+
+dis=sqrt( (sp(1)-ep(1))^2 + (sp(2)-ep(2))^2 );
+
+end

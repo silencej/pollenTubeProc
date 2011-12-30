@@ -1,4 +1,4 @@
-function [bbSubs, bbLen, bbImg, tbSubs, tbLen, tbImg, ratioInBbSubs, idxLen]=getBackbone(img2,debugFlag)
+function [bbSubs, bbLen, bbImg, tbSubs, tbLen, tbImg, ratioInBbSubs, idxLen]=getBackbone(skelImg,pollenPos,debugFlag)
 % [bbSubs, bbLen, bbImg, tbSubs, tbLen, tbImg, ratioInBbSubs, idxLen]=getBackbone(img)
 % bbSubs: subs [row col] for backbone pixels in connection order, which is good for tracing.
 % len: backbone length.
@@ -12,18 +12,18 @@ function [bbSubs, bbLen, bbImg, tbSubs, tbLen, tbImg, ratioInBbSubs, idxLen]=get
 
 global gImg diagonalDis;
 
-if nargin==1
+if nargin<3
 	debugFlag=0;
 end
 
 diagonalDis=sqrt(2);
 
-img2=img2~=0;
-img=img2;
+skelImg=skelImg~=0;
+% img=img2;
 
-% Get backbone.
-% getBb is used to get the longest path from a connected skeleton bw image.
-[bbSubs, bbLen, bbImg]=getBb;
+%% Get backbone.
+% Get the longest path passing pollenPos from a connected skeleton bw image.
+[bbSubs, bbLen, bbImg]=getLongestBranch(skelImg,pollenPos);
 
 if debugFlag
 	imshow(bbImg);
@@ -32,18 +32,19 @@ end
 %% Third branch.
 % Definition: the longest path in the skel-backbone image.
 
-remImg=img2-bbImg; % Remaining img.
+remImg=skelImg-bbImg; % Remaining img.
 tempImg=keepLargest(remImg,8);
-img=tempImg;
-[tbSubs, tbLen, tbImg]=getBb;
+% img=tempImg;
+[tbSubs, tbLen, tbImg]=getLongestPath(tempImg);
 
-% Cal the ratio of tb in bbSubs.
-img=tbImg;
-sp=findEndpoint(img);
-gImg=img;
+%% Cal the ratio of tb in bbSubs.
+% img=tbImg;
+gImg=tbImg;
+sp=findEndPoint(gImg);
+gImg=tbImg;
 ep=traceToEJ(sp);
 nbrs=nbr8(ep);
-% The backbone returned by getBb may contain Ren-shape. So the following.
+% The tb-backbone returned by getBb may contain Ren-shape. So the following.
 while nbrs(1)
 	ep=traceToEJ(nbrs);
 	nbrs=nbr8(ep);
@@ -55,19 +56,19 @@ end
 %	 disp();
 % end
 
-if ep(1)==3579 && ep(2)==862
-	hold off;
-	imshow(bbImg);
-	figure;
-	imshow(img2);
-end
+% if ep(1)==3579 && ep(2)==862
+% 	hold off;
+% 	imshow(bbImg);
+% 	figure;
+% 	imshow(img2);
+% end
 
 % tbImg=tempImg-img;
 % img=tbImg;
 % tbSubs=getBbSub(sp);
 
 bbSp=bbSubs(1,:);
-img=img2;
+gImg=skelImg;
 nbrs=nbr8(sp);
 if size(nbrs,1)==1 % sp is end point.
 	% Below can cause error if the thirdBranch is only one point, which is possible.
@@ -77,10 +78,10 @@ if size(nbrs,1)==1 % sp is end point.
 %		 ratioInBbSubs=0;
 %		 return;
 %	 end
-	img=bbImg;
+	gImg=bbImg;
 	[len idxLen]=getLenOnLine(bbSp,ep); % tb Joint Point is ep.
 elseif size(nbrs,1)>1
-	img=bbImg;
+	gImg=bbImg;
 	[len idxLen]=getLenOnLine(bbSp,sp); % tb Joint Point is sp now.
 else
 	fprintf(1,'getBackbone: Don''t know what happend.\n');
@@ -117,11 +118,11 @@ function [len idxLen]=getLenOnLine(sp,ep)
 % sp is the first point on the backbone.
 % sp must be an end point!
 % ep may not reside on the line but contact it instead.
-global img diagonalDis;
+global gImg diagonalDis;
 
 idxLen=1; % idxLen is used to plot the branch position on the bbProfile, it's different from euclidean len.
 [nbrs isNbr4]=nbr8(sp);
-img(sp(1),sp(2))=0;
+gImg(sp(1),sp(2))=0;
 if isNbr4
 	len=1;
 else
@@ -141,10 +142,10 @@ while dis>3
 	[nbrs isNbr4]=nbr8(sp);
 	if nbrs(1)==0
 		fprintf(1,'Sp: %d %d. Ep: %d %d.\n',sp(1),sp(2),ep(1),ep(2));
-		imwrite(img,'getLenOnLineError.png','png');
+		imwrite(gImg,'getLenOnLineError.png','png');
 		error('getLenOnLine: Traced to the end point, No contact?\n');
 	end
-	img(sp(1),sp(2))=0;
+	gImg(sp(1),sp(2))=0;
 	idxLen=idxLen+1;
 	if isNbr4
 		len=len+1;
