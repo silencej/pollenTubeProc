@@ -113,6 +113,8 @@ ratioInBbSubs=len/bbLen;
 
 end
 
+%%%%%%%% Sub functions. %%%%%%%%%%%%%%
+
 
 function [len idxLen]=getLenOnLine(sp,ep)
 % sp is the first point on the backbone.

@@ -17,8 +17,9 @@ function pollenTubeProc
 %
 %	Website - https://github.com/silencej/pollenTubeProc
 %
-%	Copyright, 2011 Chaofeng Wang <owen263@gmail.com>
+%	Copyright, 2011, 2012 Chaofeng Wang <owen263@gmail.com>
 
+clear global;
 global handles debugFlag;
 
 debugFlag=1;
@@ -53,9 +54,9 @@ end
 
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% Proc 1 image. %%%%%%%%%%%%%%%%
 
-function resStruct=procImg(imgFile)
+function procImg(imgFile)
 % resStruct is a struct:
 % path, filename, bbLen, bubbles, tbLen, tbRatio, bbProfile, tbProfile, 
 % bubbles is an array:
@@ -69,18 +70,47 @@ function resStruct=procImg(imgFile)
 
 % width of tube.
 
-global ori handles luCorner rlCorner debugFlag;
+global ori handles debugFlag;
 
-% Timer.
-tic;
-
-ori=imread(imgFile);
 handles.filename=imgFile;
+[pathstr,name]=fileparts(imgFile);
+handles.filenameWoExt=fullfile(pathstr,name);
 
-% Binarize images.
-bw=preprocess;
+% The following three files must exist. Use "preProc.m" to generate them.
+cutOriFile=[handles.filenameWoExt '.cut.png'];
+annoFile=[handles.filenameWoExt '.anno'];
+bwFile=[handles.filenameWoExt '.bw.png'];
+if ~exist(cutOriFile,'file')
+	fprintf(1,'%s must exist to proceed %s\n.',cutOriFile,handles.filename);
+	fprintf(1,'Use preProc.m to generate it.\n');
+	return;
+end
+if ~exist(annoFile,'file')
+	fprintf(1,'%s must exist to proceed %s\n.',annoFile,handles.filename);
+	fprintf(1,'Use preProc.m to generate it.\n');
+	return;
+end
+if ~exist(bwFile,'file')
+	fprintf(1,'%s must exist to proceed %s\n.',bwFile,handles.filename);
+	fprintf(1,'Use preProc.m to generate it.\n');
+	return;
+end
 
-%% Find the backbone.
+ori=imread(cutOriFile);
+bw=imread(bwFile);
+% Read anno file.
+fid=fopen(annoFile,'rt');
+thre=fscanf(fid,'%d',1); % useless here.
+clear thre;
+pollenPos=fscanf(fid,'%d', [1,2]); % pollen position: [row col].
+if isempty(pollenPos)
+	fprintf(1,'Pollen Position is not listed in anno file!\n');
+	fprintf(1,'Use preProc.m to generate it.\n');
+	return;
+end
+fclose(fid);
+
+%% Skeletonization.
 
 %the shape must be black, i.e., values zero.
 % Vertices num at least be 3. However, using 3 may cause "warning: matrix
@@ -97,18 +127,18 @@ skel=(skel~=0); % Convert the uint8 to logical.
 skel=parsiSkel(skel);
 
 % Save skeleton img.
-fullSkel=getFullBw(skel);
-[pathstr, name]=fileparts(handles.filename);
-resStruct.path=pathstr;
-resStruct.filename=name;
-skelFile=fullfile(pathstr,[name '.skel.png']);
-imwrite(fullSkel,skelFile,'png');
+% fullSkel=getFullBw(skel);
+% [pathstr, name]=fileparts(handles.filename);
+% resStruct.path=pathstr;
+% resStruct.filename=name;
+skelFile=[handles.filenameWoExt '.skel.png'];
+imwrite(skel,skelFile,'png');
 
-[bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=getBackbone(skel,handles.pollenPos);
+%% Backbone.
+
+[bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=decomposeSkel(skel,handles.pollenPos);
 clear skel;
 										  
-toc;
-
 Idist=bwdist(~bw);
 clear bw;
 
@@ -247,23 +277,5 @@ end
 fprintf(1,'Third branch length ratio in backbone: %4.2f from the left bb point in profile.\n',ratioInBbSubs);
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Sub functions.
 
-
-function plotPollen(pos)
-
-global oriPart handles;
-
-if ~isfield(handles,'fH') || ~ishandle(handles.fH)
-	handles.fH=figure;
-end
-
-figure(handles.fH);
-
-imshow(oriPart);
-hold on;
-plot(pos(2),pos(1),'or','MarkerFaceColor','r','MarkerSize',9);
-hold off;
-
-end
 
