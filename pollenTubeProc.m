@@ -26,9 +26,7 @@ debugFlag=1;
 
 % Specify global threshold in range [0 254].
 handles.skelVerNum=7; % Skeleton Vertices number. atleast 5.
-handles.diskSize=50;
-handles.eraseFactor=0;
-handles.addFactor=2;
+handles.branchThre=50; % Branch skel pixel num.
 
 % Result: Although the gamma transform makes the bw more connected and less
 % rough, it also causes the overestimate of the circle's radius.
@@ -134,25 +132,25 @@ skel=parsiSkel(skel);
 skelFile=[handles.filenameWoExt '.skel.png'];
 imwrite(skel,skelFile,'png');
 
-%% Backbone.
+%% Backbone and branches.
 
-[bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=decomposeSkel(skel,handles.pollenPos);
+% [bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=decomposeSkel(skel,handles.pollenPos,handles.branchThre);
+[backbone branches]=decomposeSkel(skel,handles.pollenPos,handles.branchThre);
 clear skel;
 										  
 Idist=bwdist(~bw);
 clear bw;
-
-%% Third branch.
-
-% tbDist=Idist.*double(tbImg);
-% tbDist1=tbDist(:);
-% tbProfile=tbDist1(sub2ind(size(tbImg),tbSubs(:,1),tbSubs(:,2)));
 
 %% Output
 
 % Find the pollen and tip radius.
 
 % Idist=bwdist(~bw);
+
+bbImg=backbone.img;
+bbSubs=backbone.subs;
+bbLen=backbone.len;
+branchIdx=branches.bbbIdx;
 
 bbDist=Idist.*double(bbImg);
 bbDist1=bbDist(:);
@@ -173,7 +171,9 @@ if debugFlag
 	set(gcf,'InvertHardCopy','off');
 	hold on;
 	plot(bbProfileF,'-r');
-	plot([idxLen idxLen],ylim,'-b'); % branching position.
+	for i=1:length(branchIdx)
+		plot([branchIdx(i) branchIdx(i)],ylim,'-b'); % branching position.
+	end
 	hold off;
 	legend('Unfiltered Profile','Filtered Profile','Branching Point');
 	xlabel('Pixels along backbone');
@@ -223,8 +223,8 @@ end
 
 % Draw circles.
 if debugFlag
-	luCorner=handles.luCorner;
-	rlCorner=handles.rlCorner;
+%	luCorner=handles.luCorner;
+%	rlCorner=handles.rlCorner;
 	figure;
 	warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
 	% Use warning('query','last'); to see the warning message ID.
@@ -236,26 +236,34 @@ if debugFlag
 	hold on;
 	%		plot(col,row,'.w');
 	% Show the backbone.
-	plot(bbSubs(:,2)+luCorner(2)-1, bbSubs(:,1)+luCorner(1)-1, '.w');
-	plot(tbSubs(:,2)+luCorner(2)-1, tbSubs(:,1)+luCorner(1)-1, '.w');
+%	plot(bbSubs(:,2)+luCorner(2)-1, bbSubs(:,1)+luCorner(1)-1, '.w');
+%	plot(tbSubs(:,2)+luCorner(2)-1, tbSubs(:,1)+luCorner(1)-1, '.w');
+	plot(bbSubs(:,2), bbSubs(:,1), '.w');
+	plot(bbSubs(:,2), bbSubs(:,1), '.w');
 	% Show the main circles.
 	% 		radius=int32(circleCenter(1,3));
 	radius=circleCenter(1,3);
-	row=circleCenter(1,1)-radius+luCorner(1)-1;
-	col=circleCenter(1,2)-radius+luCorner(2)-1;
+%	row=circleCenter(1,1)-radius+luCorner(1)-1;
+%	col=circleCenter(1,2)-radius+luCorner(2)-1;
+	row=circleCenter(1,1)-radius;
+	col=circleCenter(1,2)-radius;
 	rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
 	plot(col+radius,row+radius,'or','MarkerSize',9); % plot center.
 	if length(locsS)>=2
 		radius=circleCenter(2,3);
-		row=circleCenter(2,1)-radius+luCorner(1)-1;
-		col=circleCenter(2,2)-radius+luCorner(2)-1;
+%		row=circleCenter(2,1)-radius+luCorner(1)-1;
+%		col=circleCenter(2,2)-radius+luCorner(2)-1;
+		row=circleCenter(2,1)-radius;
+		col=circleCenter(2,2)-radius;
 		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
 		plot(col+radius,row+radius,'.c','MarkerSize',9);
 	end
 	if length(locsS)>=3
 		radius=circleCenter(3,3);
-		row=circleCenter(3,1)-radius+luCorner(1)-1;
-		col=circleCenter(3,2)-radius+luCorner(2)-1;
+%		row=circleCenter(3,1)-radius+luCorner(1)-1;
+%		col=circleCenter(3,2)-radius+luCorner(2)-1;
+		row=circleCenter(3,1)-radius;
+		col=circleCenter(3,2)-radius;
 		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','b');
 		plot(col+radius,row+radius,'.b','MarkerSize',9);
 	end
