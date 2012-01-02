@@ -23,6 +23,9 @@ handles.cutMargin=10; % cut to make the result have 10 pixel margin.
 handles.diskSize=50;
 handles.eraseFactor=0;
 handles.addFactor=2;
+% When the mask has more pixels than maskIntelThre, the mask will be
+% intelligently dilated, otherwise no dilation.
+handles.maskIntelThre=400;
 
 files=getImgFileNames;
 if files{1}==0
@@ -136,6 +139,7 @@ api=iptgetapi(h);
 pos=api.getPosition();
 mask=poly2mask(pos(:,1),pos(:,2),size(bw,1),size(bw,2));
 while ~isempty(find(mask(:), 1))
+    fprintf(1,'The selected mask has %g pixels.\n',length(find(mask)));
 	bw=applyMask(mask,bw);
 	fprintf(1,'======================================================================\nManual correction for the bitmap.\n');
 	fprintf(1,'Select a region of interest, modify, and double click if finished. If no need to correct, just double click.\n');
@@ -279,6 +283,14 @@ minusBw=mask.*(~bw);
 minusBw=(minusBw~=0);
 % If the ROI contains mostly bw's 1s', the ROI is used to erase.
 if length(find(andBw(:)))>=length(find(minusBw(:)))
+    % If the mask is small, no intelligent dilation is used.
+    if length(find(mask))<=handles.maskIntelThre
+        bw=bw-andBw;
+        bw=imfill(bw,'holes');
+        bw=keepLargest(bw);
+        plotBwOnOri(bw);
+        return;
+    end
 	window=double(grayOri.*uint8(andBw));
 	window1d=window(andBw(:)~=0);
 	winThre=median(window1d)+eraseFactor*1.4826*mad(window1d,1);
@@ -292,6 +304,14 @@ if length(find(andBw(:)))>=length(find(minusBw(:)))
 	bw=bw - ( bw & threRes);
 	% If the ROI contains mostly bw's 0s', the ROI is used to add.
 else
+    % If the mask is small, no intelligent dilation is used.
+    if length(find(mask))<=handles.maskIntelThre
+        bw=bw+minusBw;
+        bw=imfill(bw,'holes');
+        bw=keepLargest(bw);
+        plotBwOnOri(bw);
+        return;
+    end
 	window=double(grayOri.*uint8(minusBw));
 	window1d=window(minusBw(:)~=0);
 	winThre=median(window1d)-addFactor*1.4826*mad(window1d,1);

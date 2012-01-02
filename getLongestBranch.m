@@ -1,6 +1,8 @@
 function [bbSubs, bbLen, bbImg]=getLongestBranch(skelImg,pollenPos)
 % "getLongestBranch" is used to get the longest path passing the pollenPos, from a connected skeleton bw image.
 % It's like "getLongestPath" but there is difference: the path must pass the pollenPos.
+% "bbSubs" should start with the end point closest to pollen grain, e.g.,
+% bbSubs is ordered.
 
 global gImg;
 
@@ -38,7 +40,7 @@ if epIdx==0 % If the pollenPos can't specify an end point, the longest path is u
 else % Choose the longest path passing pollenPos.
 	[Y I]=max(D(:,epIdx));
 	bbLen=Y;
-	sp=vertices(epIdx,2:3);
+	sp=vertices(epIdx,2:3); % The sp is the end point closest to pollen grain.
 	ep=vertices(I,2:3);
 end
 
@@ -70,6 +72,8 @@ bbImg=gImg;
 
 % Get the backbone indices sequence.
 % Now img is the backbone img.
+% Since sp is the closest end point to pollen grain, the bbSubs will start
+% at the end where pollen grain resides.
 bbSubs=getPathSubs(sp);
 
 end
@@ -104,10 +108,3 @@ end
 
 end
 
-function dis=euDist(sp,ep)
-% Calculate the Eucledian distance.
-% sp: start point. ep: end point.
-
-dis=sqrt( (sp(1)-ep(1))^2 + (sp(2)-ep(2))^2 );
-
-end

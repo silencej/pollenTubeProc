@@ -25,8 +25,11 @@ global handles debugFlag;
 debugFlag=1;
 
 % Specify global threshold in range [0 254].
-handles.skelVerNum=7; % Skeleton Vertices number. atleast 5.
-handles.branchThre=50; % Branch skel pixel num.
+% Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
+handles.skelVerNum=11; % Skeleton Vertices number. atleast 5.
+handles.branchThre=30; % Branch skel pixel num.
+% Used to set how far away a peak should be away from branching point.
+handles.peakNotBranchThre=20;
 
 % Result: Although the gamma transform makes the bw more connected and less
 % rough, it also causes the overestimate of the circle's radius.
@@ -100,8 +103,8 @@ bw=imread(bwFile);
 fid=fopen(annoFile,'rt');
 thre=fscanf(fid,'%d',1); % useless here.
 clear thre;
-pollenPos=fscanf(fid,'%d', [1,2]); % pollen position: [row col].
-if isempty(pollenPos)
+handles.pollenPos=fscanf(fid,'%d', [1,2]); % pollen position: [row col].
+if isempty(handles.pollenPos)
 	fprintf(1,'Pollen Position is not listed in anno file!\n');
 	fprintf(1,'Use preProc.m to generate it.\n');
 	return;
@@ -150,7 +153,6 @@ clear bw;
 bbImg=backbone.img;
 bbSubs=backbone.subs;
 bbLen=backbone.len;
-branchIdx=branches.bbbIdx;
 
 bbDist=Idist.*double(bbImg);
 bbDist1=bbDist(:);
@@ -164,6 +166,8 @@ else
 end
 bbProfile=double(bbProfile);
 bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
+% branchIdx is used for getting peaks which are not at branching points.
+branchIdx=zeros(length(branches),1);
 if debugFlag
 	figure;
 	plot(bbProfile,'-k');
@@ -171,8 +175,9 @@ if debugFlag
 	set(gcf,'InvertHardCopy','off');
 	hold on;
 	plot(bbProfileF,'-r');
-	for i=1:length(branchIdx)
-		plot([branchIdx(i) branchIdx(i)],ylim,'-b'); % branching position.
+	for i=1:length(branches)
+        branchIdx(i)=branches(i).bbbIdx;
+		plot([branches(i).bbbIdx branches(i).bbbIdx],ylim,'-b'); % branching position.
 	end
 	hold off;
 	legend('Unfiltered Profile','Filtered Profile','Branching Point');
@@ -186,8 +191,8 @@ end
 pollenWidth=median(bbProfile)+1.4826*mad(bbProfile,1);
 
 % Get rid of all peaks lower than pollenWidth.
-pks=pks(pks>pollenWidth);
 locs=locs(pks>pollenWidth);
+pks=pks(pks>pollenWidth);
 
 % pksS - sorted.
 [pksS I]=sort(pks,'descend');
@@ -195,9 +200,11 @@ locsS=locs(I);
 
 % Find the pollen grain circle.
 grain=[0 0 0];
+grainIdx=0;
 for i=1:length(pksS)
-	if euDist(bbSubs(locsS(i),:),pollenPos)<=bbProfile(locsS(i))
+	if euDist(bbSubs(locsS(i),:),handles.pollenPos)<=bbProfile(locsS(i))
 		grain=[bbSubs(locsS(i),:) bbProfile(locsS(i))]; % grain: [row col radius].
+        grainIdx=i;
 		break;
 	end
 end
@@ -205,26 +212,39 @@ if ~grain(1)
 	error('Pollen Grain Calculation Error!!!');
 end
 
-circleCenter(1,1:2)=bbSubs(locsS(1),:);
-% circleCenter(1,3)=pksS(1);
-% Get the original, e.g. unfiltered height!
-circleCenter(1,3)=bbProfile(locsS(1));
-if length(locsS)>=2
-	circleCenter(2,1:2)=bbSubs(locsS(2),:);
-	circleCenter(2,3)=pks(I(2));
+bubbleNum=0;
+bubbles=zeros(5,3);
+% Find the bubbles on backbone, ignore pollen grain and branching points.
+for i=1:length(pksS)
+    if i==grainIdx
+        continue;
+    end
+    if min(abs(branchIdx-locsS(i)))>handles.peakNotBranchThre;
+        bubbleNum=bubbleNum+1;
+        bubbles(bubbleNum,:)=[bbSubs(locsS(i),:) bbProfile(locsS(i))];
+    end
 end
-if length(locsS)>=3
-	circleCenter(3,1:2)=bbSubs(locsS(3),:);
-	circleCenter(3,3)=pks(I(3));
-end
+
+% % Draw circles.
+% % circleCenter: [row col radius].
+% circleCenter(1,1:2)=bbSubs(locsS(1),:);
+% % circleCenter(1,3)=pksS(1);
+% % Get the original, e.g. unfiltered height!
+% circleCenter(1,3)=bbProfile(locsS(1));
+% if length(locsS)>=2
+% 	circleCenter(2,1:2)=bbSubs(locsS(2),:);
+% 	circleCenter(2,3)=pks(I(2));
+% end
+% if length(locsS)>=3
+% 	circleCenter(3,1:2)=bbSubs(locsS(3),:);
+% 	circleCenter(3,3)=pks(I(3));
+% end
 
 %	 % Correct backbone length by radius.
 %	 bbLen=bbLen-circleCenter(1,3)-circleCenter(2,3);
 
-% Draw circles.
+%% Draw circles.
 if debugFlag
-%	luCorner=handles.luCorner;
-%	rlCorner=handles.rlCorner;
 	figure;
 	warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
 	% Use warning('query','last'); to see the warning message ID.
@@ -232,57 +252,81 @@ if debugFlag
 	% Make print the default white plotted line.
 	set(gca,'Color','black');
 	set(gcf,'InvertHardCopy','off');
-	%		[row col]=find(bbImg);
 	hold on;
-	%		plot(col,row,'.w');
-	% Show the backbone.
+    
+    % Plot the backbone.
 %	plot(bbSubs(:,2)+luCorner(2)-1, bbSubs(:,1)+luCorner(1)-1, '.w');
 %	plot(tbSubs(:,2)+luCorner(2)-1, tbSubs(:,1)+luCorner(1)-1, '.w');
 	plot(bbSubs(:,2), bbSubs(:,1), '.w');
 	plot(bbSubs(:,2), bbSubs(:,1), '.w');
-	% Show the main circles.
-	% 		radius=int32(circleCenter(1,3));
-	radius=circleCenter(1,3);
-%	row=circleCenter(1,1)-radius+luCorner(1)-1;
-%	col=circleCenter(1,2)-radius+luCorner(2)-1;
-	row=circleCenter(1,1)-radius;
-	col=circleCenter(1,2)-radius;
-	rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
-	plot(col+radius,row+radius,'or','MarkerSize',9); % plot center.
-	if length(locsS)>=2
-		radius=circleCenter(2,3);
-%		row=circleCenter(2,1)-radius+luCorner(1)-1;
-%		col=circleCenter(2,2)-radius+luCorner(2)-1;
-		row=circleCenter(2,1)-radius;
-		col=circleCenter(2,2)-radius;
-		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
-		plot(col+radius,row+radius,'.c','MarkerSize',9);
-	end
-	if length(locsS)>=3
-		radius=circleCenter(3,3);
-%		row=circleCenter(3,1)-radius+luCorner(1)-1;
-%		col=circleCenter(3,2)-radius+luCorner(2)-1;
-		row=circleCenter(3,1)-radius;
-		col=circleCenter(3,2)-radius;
-		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','b');
-		plot(col+radius,row+radius,'.b','MarkerSize',9);
-	end
+    
+    % Plot branches.
+    for i=1:length(branches)
+        plot(branches(i).subs(:,2), branches(i).subs(:,1), '.w'); % branching position.
+    end
+
+    % Plot grain circle.
+    radius=grain(3);
+    row=grain(1)-radius;
+    col=grain(2)-radius;
+    rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
+    plot(col+radius,row+radius,'.r','MarkerSize',9); % plot center.
+    
+    % Plot the pollen tips and bubbles.
+    % Shrink zero rows out from bubbles.
+    bubbles=bubbles(bubbles(:,1)~=0,:);
+    for i=1:size(bubbles,1)
+        radius=bubbles(3);
+        row=bubbles(1)-radius;
+        col=bubbles(2)-radius;
+        rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','m');
+    end
+% 	% Show the main circles.
+% 	% 		radius=int32(circleCenter(1,3));
+% 	radius=circleCenter(1,3);
+% %	row=circleCenter(1,1)-radius+luCorner(1)-1;
+% %	col=circleCenter(1,2)-radius+luCorner(2)-1;
+% 	row=circleCenter(1,1)-radius;
+% 	col=circleCenter(1,2)-radius;
+% 	rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
+% 	plot(col+radius,row+radius,'or','MarkerSize',9); % plot center.
+% 	if length(locsS)>=2
+% 		radius=circleCenter(2,3);
+% %		row=circleCenter(2,1)-radius+luCorner(1)-1;
+% %		col=circleCenter(2,2)-radius+luCorner(2)-1;
+% 		row=circleCenter(2,1)-radius;
+% 		col=circleCenter(2,2)-radius;
+% 		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
+% 		plot(col+radius,row+radius,'.c','MarkerSize',9);
+% 	end
+% 	if length(locsS)>=3
+% 		radius=circleCenter(3,3);
+% %		row=circleCenter(3,1)-radius+luCorner(1)-1;
+% %		col=circleCenter(3,2)-radius+luCorner(2)-1;
+% 		row=circleCenter(3,1)-radius;
+% 		col=circleCenter(3,2)-radius;
+% 		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','b');
+% 		plot(col+radius,row+radius,'.b','MarkerSize',9);
+%     end
+    
 	hold off;
 end
 
 fprintf(1,'==============================================\nResult:\n');
 fprintf(1,'Image: %s\n',handles.filename);
 fprintf(1,'Backbone Euclidean Length: %6.2f pixels.\n',bbLen);
-fprintf(1,'Largest radius (red circle): %6.2f pixels.\n',circleCenter(1,3));
-if length(locsS)>=2
-	fprintf(1,'Second largest radius (cyan circle): %6.2f pixels.\n',circleCenter(2,3));
-end
-if length(locsS)>=3
-	fprintf(1,'Third largest radius (blue circle): %6.2f pixels.\n',circleCenter(3,3));
-% else
-%	 fprintf(1,'There are only two peaks in backbone profile.\n');
-end
-fprintf(1,'Third branch length ratio in backbone: %4.2f from the left bb point in profile.\n',ratioInBbSubs);
+
+% fprintf(1,'Largest radius (red circle): %6.2f pixels.\n',circleCenter(1,3));
+% if length(locsS)>=2
+% 	fprintf(1,'Second largest radius (cyan circle): %6.2f pixels.\n',circleCenter(2,3));
+% end
+% if length(locsS)>=3
+% 	fprintf(1,'Third largest radius (blue circle): %6.2f pixels.\n',circleCenter(3,3));
+% % else
+% %	 fprintf(1,'There are only two peaks in backbone profile.\n');
+% end
+
+% fprintf(1,'Third branch length ratio in backbone: %4.2f from the left bb point in profile.\n',ratioInBbSubs);
 end
 
 

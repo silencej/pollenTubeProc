@@ -13,7 +13,7 @@ function [backbone, branches]=decomposeSkel(skelImg,pollenPos,branchThre,debugFl
 
 global gImg diagonalDis;
 
-if nargin<3
+if nargin<4
 	debugFlag=0;
 end
 

@@ -3,6 +3,8 @@ function [bbSubs, bbLen, bbImg]=getLongestPath(skelImg)
 % It's used to get the backbone of whole image, and also the third branch
 % in remainder image. The third branch is the longest path in the remainder
 % image though.
+% As in getLongestBranch, "bbSubs" is well ordered, e.g. starting at the
+% joint branching point.
 
 global gImg;
 
@@ -50,6 +52,13 @@ bbImg=gImg;
 % Get the backbone indices sequence.
 % Now img is the backbone img.
 bbSubs=getPathSubs(sp);
+
+% Re-order the tbSubs to make it start with joint branching point.
+gImg=skelImg;
+nbrs=nbr8(bbSubs(1,:));
+if size(nbrs,1)==1
+    bbSubs=bbSubs(end:-1:1,:);
+end
 
 end
 

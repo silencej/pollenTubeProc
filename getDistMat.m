@@ -12,7 +12,7 @@ tempImg=gImg;
 %% The first phase.
 
 %find an end point.
-sp=findEndpoint(gImg);
+sp=findEndPoint(gImg);
 
 % Tracing.
 vNum=1;
