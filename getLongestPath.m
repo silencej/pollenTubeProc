@@ -8,6 +8,10 @@ function [bbSubs, bbLen, bbImg]=getLongestPath(skelImg)
 
 global gImg;
 
+if isempty(find(skelImg,1))
+	error('Error: The skelImg is all black!');
+end
+
 [D vertices]=getDistMat(skelImg);
 
 % If D==0, which means there is only one point in skelImg.
@@ -57,7 +61,7 @@ bbSubs=getPathSubs(sp);
 gImg=skelImg;
 nbrs=nbr8(bbSubs(1,:));
 if size(nbrs,1)==1
-    bbSubs=bbSubs(end:-1:1,:);
+	bbSubs=bbSubs(end:-1:1,:);
 end
 
 end

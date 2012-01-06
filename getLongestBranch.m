@@ -6,6 +6,10 @@ function [bbSubs, bbLen, bbImg]=getLongestBranch(skelImg,pollenPos)
 
 global gImg;
 
+if isempty(find(skelImg,1))
+    error('Error: The skelImg is all black!');
+end
+
 [D vertices]=getDistMat(skelImg);
 
 % If D==0, which means there is only one point in skelImg.

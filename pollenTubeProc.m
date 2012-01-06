@@ -27,9 +27,11 @@ debugFlag=1;
 % Specify global threshold in range [0 254].
 % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
 handles.skelVerNum=11; % Skeleton Vertices number. atleast 5.
-handles.branchThre=30; % Branch skel pixel num.
+handles.branchThre=100; % Branch skel pixel num.
 % Used to set how far away a peak should be away from branching point.
 handles.peakNotBranchThre=20;
+% Preset the col num for EMFM. At least 3+2=5, or 7, 9, ... 2 more each time.
+handles.emfmCol=11;
 
 % Result: Although the gamma transform makes the bw more connected and less
 % rough, it also causes the overestimate of the circle's radius.
@@ -63,13 +65,21 @@ function procImg(imgFile)
 % bubbles is an array:
 % [centerRow centerCol radius]
 
+% Output:
+% Extensible Morphology Feature Matrix (EMFM)
+% Line 1 - backbone: pollenGrainRadius, tubeLength, tubeWidth, 1stBubbleRelativePos, 1stBubbleRadius, 2ndBubbleRelativePos, ... ...
+% Line 2,3,... - other branches.
+% branchingRelativePos, tubeLength, tubeWidth, 1stBubbleRelativePos, ... ...
+%
+
 % TODO:
-% Detect pollen. Benefits: 1. avoid problem when branches are longest.
-% 2. the profile has a start point, and the tbRatio too.
+% Get Eu-distances for 3 different demo images.
+% 1. Clustering on a group of simulated images. 2. Linear regression to get coef for each feature. 3. Cal the mahalonobis-distance.
+%
+
 % Wildtype, swollenTip, branching, wavy, swollenTube, budding.
 % SwollenTip: parralell, perpendicular.
 
-% width of tube.
 
 global ori handles debugFlag;
 
@@ -135,28 +145,108 @@ skel=parsiSkel(skel);
 skelFile=[handles.filenameWoExt '.skel.png'];
 imwrite(skel,skelFile,'png');
 
-%% Backbone and branches.
+%% Get backbone and branches.
 
 % [bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=decomposeSkel(skel,handles.pollenPos,handles.branchThre);
 [backbone branches]=decomposeSkel(skel,handles.pollenPos,handles.branchThre);
 clear skel;
 										  
+%% Find the pollen grain and bb bubble radius.
+
 Idist=bwdist(~bw);
 clear bw;
 
-%% Output
+% EMFM is the combination of bbMat and brMat;
 
-% Find the pollen and tip radius.
+[bbMat grain bbBubbles]=analyzeBackbone(backbone,branches,Idist,debugFlag);
 
-% Idist=bwdist(~bw);
+[brMat brBubbles]=analyzeBranches(branches,Idist);
+
+
+%% Image plot.
+if debugFlag
+	figure;
+	warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
+	% Use warning('query','last'); to see the warning message ID.
+	imshow(ori);
+	% Make print the default white plotted line.
+	set(gca,'Color','black');
+	set(gcf,'InvertHardCopy','off');
+	hold on;
+    
+    bbSubs=backbone.subs;
+	
+	% Plot the backbone.
+	plot(bbSubs(:,2), bbSubs(:,1), '.w');
+	plot(bbSubs(:,2), bbSubs(:,1), '.w');
+	
+	% Plot branches.
+	for i=1:length(branches)
+		plot(branches(i).subs(:,2), branches(i).subs(:,1), '.w'); % branching position.
+	end
+
+	% Plot grain circle.
+	radius=grain(3);
+	row=grain(1)-radius;
+	col=grain(2)-radius;
+	rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
+	plot(col+radius,row+radius,'.r','MarkerSize',15); % plot center.
+	
+	% Plot bubbles on backbone.
+	for i=1:size(bbBubbles,1)
+		radius=bbBubbles(3);
+		row=bbBubbles(1)-radius;
+		col=bbBubbles(2)-radius;
+		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','m');
+		plot(col+radius,row+radius,'.m','MarkerSize',15); % plot center.
+	end
+
+	% Plot branches bubbles.
+	% Shrink zero rows out from bubbles.
+	brBubbles=brBubbles(brBubbles(:,1)~=0,:);
+	for i=1:size(brBubbles,1)
+		radius=brBubbles(3);
+		row=brBubbles(1)-radius;
+		col=brBubbles(2)-radius;
+		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','m');
+		plot(col+radius,row+radius,'.m','MarkerSize',15); % plot center.
+	end
+
+	hold off;
+end
+
+
+%% Output to the text file filename.emfm.
+
+emfmFile=[handles.filenameWoExt '.emfm'];
+fid=fopen(emfmFile,'w');
+fprintf(fid,'%g\t',bbMat');
+fprintf(fid,'\n');
+
+for i=size(brMat,1)
+	fprintf(fid,'%g\t',brMat'); % fprintf is column-wise.
+	fprintf(fid,'\n');
+end
+
+fclose(fid);
+
+fprintf(1,'Image %s processing finished.\n',handles.filename);
+
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [bbMat grain bubbles]=analyzeBackbone(backbone,branches,Idist,debugFlag)
+
+global handles gImg;
 
 bbImg=backbone.img;
 bbSubs=backbone.subs;
 bbLen=backbone.len;
 
 bbDist=Idist.*double(bbImg);
-bbDist1=bbDist(:);
-bbProfile=bbDist1(sub2ind(size(bbImg),bbSubs(:,1),bbSubs(:,2)));
+bbDist=bbDist(:);
+bbProfile=bbDist(sub2ind(size(bbImg),bbSubs(:,1),bbSubs(:,2)));
 % The length of the input x must be more than three times the filter
 % order in filtfilt.
 if length(bbProfile)>3*48
@@ -166,33 +256,16 @@ else
 end
 bbProfile=double(bbProfile);
 bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
-% branchIdx is used for getting peaks which are not at branching points.
-branchIdx=zeros(length(branches),1);
-if debugFlag
-	figure;
-	plot(bbProfile,'-k');
-	set(gca,'TickDir','out','Box','off','YGrid','on'); % Reset axes for printing.
-	set(gcf,'InvertHardCopy','off');
-	hold on;
-	plot(bbProfileF,'-r');
-	for i=1:length(branches)
-        branchIdx(i)=branches(i).bbbIdx;
-		plot([branches(i).bbbIdx branches(i).bbbIdx],ylim,'-b'); % branching position.
-	end
-	hold off;
-	legend('Unfiltered Profile','Filtered Profile','Branching Point');
-	xlabel('Pixels along backbone');
-	ylabel('Distance transform');
-end
+
 % Points largest bbProfiles, circleCenter = [row col distanceTransform].
 [pks locs]=findpeaks(bbProfileF);
 
-% Pollen Width = median+1.4826*mad.
-pollenWidth=median(bbProfile)+1.4826*mad(bbProfile,1);
+% Width = median+1.4826*mad.
+bbWidth=median(bbProfile)+1.4826*mad(bbProfile,1);
 
-% Get rid of all peaks lower than pollenWidth.
-locs=locs(pks>pollenWidth);
-pks=pks(pks>pollenWidth);
+% Get rid of all peaks lower than bbWidth.
+locs=locs(pks>bbWidth);
+pks=pks(pks>bbWidth);
 
 % pksS - sorted.
 [pksS I]=sort(pks,'descend');
@@ -204,7 +277,7 @@ grainIdx=0;
 for i=1:length(pksS)
 	if euDist(bbSubs(locsS(i),:),handles.pollenPos)<=bbProfile(locsS(i))
 		grain=[bbSubs(locsS(i),:) bbProfile(locsS(i))]; % grain: [row col radius].
-        grainIdx=i;
+		grainIdx=i;
 		break;
 	end
 end
@@ -212,122 +285,132 @@ if ~grain(1)
 	error('Pollen Grain Calculation Error!!!');
 end
 
-bubbleNum=0;
-bubbles=zeros(5,3);
-% Find the bubbles on backbone, ignore pollen grain and branching points.
-for i=1:length(pksS)
-    if i==grainIdx
-        continue;
-    end
-    if min(abs(branchIdx-locsS(i)))>handles.peakNotBranchThre;
-        bubbleNum=bubbleNum+1;
-        bubbles(bubbleNum,:)=[bbSubs(locsS(i),:) bbProfile(locsS(i))];
-    end
-end
+bbMat=zeros(1,handles.emfmCol);
+bbMat(1)=grain(3);
+bbMat(2)=bbLen;
+bbMat(3)=bbWidth;
 
-% % Draw circles.
-% % circleCenter: [row col radius].
-% circleCenter(1,1:2)=bbSubs(locsS(1),:);
-% % circleCenter(1,3)=pksS(1);
-% % Get the original, e.g. unfiltered height!
-% circleCenter(1,3)=bbProfile(locsS(1));
-% if length(locsS)>=2
-% 	circleCenter(2,1:2)=bbSubs(locsS(2),:);
-% 	circleCenter(2,3)=pks(I(2));
-% end
-% if length(locsS)>=3
-% 	circleCenter(3,1:2)=bbSubs(locsS(3),:);
-% 	circleCenter(3,3)=pks(I(3));
-% end
 
-%	 % Correct backbone length by radius.
-%	 bbLen=bbLen-circleCenter(1,3)-circleCenter(2,3);
+%% Cal branchIdx and Profile plot.
 
-%% Draw circles.
+% branchIdx is used for getting peaks which are not at branching points.
+branchIdx=zeros(length(branches),1);
 if debugFlag
 	figure;
-	warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
-	% Use warning('query','last'); to see the warning message ID.
-	imshow(ori);
-	% Make print the default white plotted line.
-	set(gca,'Color','black');
+	plot(bbProfile,'-k');
+	set(gca,'TickDir','out','Box','off','YGrid','on'); % Reset axes for printing.
 	set(gcf,'InvertHardCopy','off');
 	hold on;
-    
-    % Plot the backbone.
-%	plot(bbSubs(:,2)+luCorner(2)-1, bbSubs(:,1)+luCorner(1)-1, '.w');
-%	plot(tbSubs(:,2)+luCorner(2)-1, tbSubs(:,1)+luCorner(1)-1, '.w');
-	plot(bbSubs(:,2), bbSubs(:,1), '.w');
-	plot(bbSubs(:,2), bbSubs(:,1), '.w');
-    
-    % Plot branches.
-    for i=1:length(branches)
-        plot(branches(i).subs(:,2), branches(i).subs(:,1), '.w'); % branching position.
-    end
-
-    % Plot grain circle.
-    radius=grain(3);
-    row=grain(1)-radius;
-    col=grain(2)-radius;
-    rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
-    plot(col+radius,row+radius,'.r','MarkerSize',9); % plot center.
-    
-    % Plot the pollen tips and bubbles.
-    % Shrink zero rows out from bubbles.
-    bubbles=bubbles(bubbles(:,1)~=0,:);
-    for i=1:size(bubbles,1)
-        radius=bubbles(3);
-        row=bubbles(1)-radius;
-        col=bubbles(2)-radius;
-        rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','m');
-    end
-% 	% Show the main circles.
-% 	% 		radius=int32(circleCenter(1,3));
-% 	radius=circleCenter(1,3);
-% %	row=circleCenter(1,1)-radius+luCorner(1)-1;
-% %	col=circleCenter(1,2)-radius+luCorner(2)-1;
-% 	row=circleCenter(1,1)-radius;
-% 	col=circleCenter(1,2)-radius;
-% 	rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
-% 	plot(col+radius,row+radius,'or','MarkerSize',9); % plot center.
-% 	if length(locsS)>=2
-% 		radius=circleCenter(2,3);
-% %		row=circleCenter(2,1)-radius+luCorner(1)-1;
-% %		col=circleCenter(2,2)-radius+luCorner(2)-1;
-% 		row=circleCenter(2,1)-radius;
-% 		col=circleCenter(2,2)-radius;
-% 		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
-% 		plot(col+radius,row+radius,'.c','MarkerSize',9);
-% 	end
-% 	if length(locsS)>=3
-% 		radius=circleCenter(3,3);
-% %		row=circleCenter(3,1)-radius+luCorner(1)-1;
-% %		col=circleCenter(3,2)-radius+luCorner(2)-1;
-% 		row=circleCenter(3,1)-radius;
-% 		col=circleCenter(3,2)-radius;
-% 		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','b');
-% 		plot(col+radius,row+radius,'.b','MarkerSize',9);
-%     end
-    
+	plot(bbProfileF,'-r');
+	for i=1:length(branches)
+		branchIdx(i)=branches(i).bbbIdx;
+		plot([branches(i).bbbIdx branches(i).bbbIdx],ylim,'-b'); % branching position.
+	end
 	hold off;
+	legend('Unfiltered Profile','Filtered Profile','Branching Point');
+	xlabel('Pixels along backbone');
+	ylabel('Distance transform');
 end
 
-fprintf(1,'==============================================\nResult:\n');
-fprintf(1,'Image: %s\n',handles.filename);
-fprintf(1,'Backbone Euclidean Length: %6.2f pixels.\n',bbLen);
+%%
 
-% fprintf(1,'Largest radius (red circle): %6.2f pixels.\n',circleCenter(1,3));
-% if length(locsS)>=2
-% 	fprintf(1,'Second largest radius (cyan circle): %6.2f pixels.\n',circleCenter(2,3));
-% end
-% if length(locsS)>=3
-% 	fprintf(1,'Third largest radius (blue circle): %6.2f pixels.\n',circleCenter(3,3));
-% % else
-% %	 fprintf(1,'There are only two peaks in backbone profile.\n');
-% end
-
-% fprintf(1,'Third branch length ratio in backbone: %4.2f from the left bb point in profile.\n',ratioInBbSubs);
+bubbleNum=0;
+bubbles=zeros(5,3); % bubbles: [row col radius].
+% Find the bubbles on backbone, ignore pollen grain and branching points.
+for i=1:length(pksS)
+	if i==grainIdx
+		continue;
+	end
+	if min(abs(branchIdx-locsS(i)))>handles.peakNotBranchThre;
+		bubbleNum=bubbleNum+1;
+		bubblePos=bbSubs(locsS(i),:);
+		bubbles(bubbleNum,:)=[bubblePos bbProfile(locsS(i))];
+		gImg=bbImg;
+		sp=bbSubs(1);
+		len=getLenOnLine(sp,bubblePos);
+		bbMat(i,3+(bubbleNum-1)*2+1)=double(len/bbLen);
+		bbMat(i,3+(bubbleNum-1)*2+2)=bbProfile(locsS(i));
+	end
 end
 
+% Shrink zero rows out from bubbles.
+bubbles=bubbles(bubbles(:,1)~=0,:);
 
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [brMat bubbles]=analyzeBranches(branches,Idist)
+% returen the branches part of the EMFM.
+% bubbles: all picked bubbles on the branches. Return for ploting.
+
+global handles gImg;
+
+brNum=length(branches);
+brMat=zeros(brNum,handles.emfmCol);
+
+bubbleNum=0;
+bubbles=zeros(10,3); % bubbles: [row col radius].
+
+for i=1:brNum
+
+	brImg=branches(i).img;
+	brSubs=branches(i).subs;
+
+	brDist=Idist.*double(brImg);
+	brDist=brDist(:);
+	brProfile=brDist(sub2ind(size(brImg),brSubs(:,1),brSubs(:,2)));
+	% The length of the input x must be more than three times the filter
+	% order in filtfilt.
+	if length(brProfile)>3*48
+		winLen=48;
+	else
+		winLen=floor(length(brProfile)/3);
+	end
+	brProfile=double(brProfile);
+	brProfileF=filtfilt(ones(1,winLen)/winLen,1,brProfile);
+
+	[pks locs]=findpeaks(brProfileF);
+
+	% Width = median+1.4826*mad.
+	brWidth=median(brProfile)+1.4826*mad(brProfile,1);
+
+	% Get rid of all peaks lower than brWidth.
+	locs=locs(pks>brWidth);
+	pks=pks(pks>brWidth);
+
+	% pksS - sorted.
+	[pksS I]=sort(pks,'descend');
+	locsS=locs(I);
+
+	brMat(i,1)=branches(i).ratio;
+	brMat(i,2)=brLen;
+	brMat(i,3)=brWidth;
+
+	% bubbleNum is for bubbles on all branches, while bubbleOnBrNum is for one branch.
+	bubbleOnBrNum=0;
+	% Find the bubbles on backbone, ignore pollen grain and branching points.
+	for j=1:length(pksS)
+		bubbleNum=bubbleNum+1;
+		bubblePos=brSubs(locsS(j),:);
+		bubbles(bubbleNum,:)=[bubblePos brProfile(locsS(j))];
+		bubbleOnBrNum=bubbleOnBrNum+1;
+		gImg=branches(i).img;
+		sp=brSubs(1);
+		len=getLenOnLine(sp,bubblePos);
+		brMat(i,3+(bubbleOnBrNum-1)*2+1)=double(len/brLen);
+		brMat(i,3+(bubbleOnBrNum-1)*2+2)=brProfile(locsS(j));
+	end
+
+end
+
+% Shrink zero cols out.
+while isempty(find(brMat(:,end),1))
+	brMat=brMat(:,1:end-1);
+end
+
+% Shrink zero rows out from bubbles.
+bubbles=bubbles(bubbles(:,1)~=0,:);
+
+end
 

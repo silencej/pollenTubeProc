@@ -11,13 +11,11 @@ function [backbone, branches]=decomposeSkel(skelImg,pollenPos,branchThre,debugFl
 % ratio is the length ratio of the third branch joint at the backbone from the start point of parent subs. Simply, it's the relative branching position.
 % bbbIdx is the backbone branching index in backbone subs.
 
-global gImg diagonalDis;
+global gImg;
 
 if nargin<4
 	debugFlag=0;
 end
-
-diagonalDis=sqrt(2);
 
 skelImg=skelImg~=0;
 % img=img2;
@@ -53,6 +51,9 @@ end
 while tbLen>branchThre
 	remImg=remImg-tbImg;
 	tempImg=keepLargest(remImg,8);
+    if isempty(find(tempImg,1))
+        break;
+    end
 	[tbSubs, tbLen, tbImg]=getLongestPath(tempImg);
 	% Check if the branch is connected to backbone.
 	tempImg=tbImg+bbImg;
@@ -77,7 +78,7 @@ end
 %%%%%%%% Sub functions. %%%%%%%%%%%%%%
 
 function [ratio,bbbIdx]=getRatio(skelImg,backbone,tbImg)
-% Cal the ratio of tb in parent subs.
+% Cal the ratio of branching point in parent subs.
 % "skelImg" is the whole parsi skel bw image.
 % "bbbIdx" is the backbone branching index.
 
@@ -139,49 +140,5 @@ ratio=len/bbLen;
 end
 
 %%
-
-function [len idxLen]=getLenOnLine(sp,ep)
-% sp is the first point on the backbone.
-% sp must be an end point!
-% ep may not reside on the line but contact it instead.
-global gImg diagonalDis;
-
-idxLen=1; % idxLen is used to plot the branch position on the bbProfile, it's different from euclidean len.
-[nbrs isNbr4]=nbr8(sp);
-gImg(sp(1),sp(2))=0;
-if isNbr4
-	len=1;
-else
-	len=diagonalDis;
-end
-dis=abs(ep(1)-nbrs(1))+abs(ep(2)-nbrs(2));
-
-% This is a classic 4-loop-in-skel problem. Hope it's rare!
-% if ep(1)==2520 && ep(2)==1727
-%	 disp();
-% end
-
-% while dis>2
-% dis>3, for the classic 4-loop-in-skel problem.
-while dis>3
-	sp=nbrs(1,:); % Backbone img may have Ren-shape joint!
-	[nbrs isNbr4]=nbr8(sp);
-	if nbrs(1)==0
-		fprintf(1,'Sp: %d %d. Ep: %d %d.\n',sp(1),sp(2),ep(1),ep(2));
-		imwrite(gImg,'getLenOnLineError.png','png');
-		error('getLenOnLine: Traced to the end point, No contact?\n');
-	end
-	gImg(sp(1),sp(2))=0;
-	idxLen=idxLen+1;
-	if isNbr4
-		len=len+1;
-	else
-		len=len+diagonalDis;
-	end
-	dis=abs(ep(1)-sp(1))+abs(ep(2)-sp(2));
-end
-
-end
-
 
 

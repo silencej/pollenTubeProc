@@ -2,10 +2,12 @@ function [D vertices]=getDistMat(skelImg)
 % This function is used to get the Distance Matrix between each joint/end point.
 % "skelImg" must be parsiSkel bitwise image with only 1 connected component!
 
-global gImg diagonalDis;
+global gImg;
 
 gImg=skelImg;
 clear skelImg;
+
+diagonalDis=sqrt(2);
 
 tempImg=gImg;
 

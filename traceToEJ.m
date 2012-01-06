@@ -8,7 +8,9 @@ if nargin<2
 	len=0;% len=0;
 end
 
-global gImg diagonalDis;
+global gImg;
+
+diagonalDis=sqrt(2);
 
 [nbr1 isNbr4]=nbr8(sp);
 gImg(sp(1),sp(2))=0;

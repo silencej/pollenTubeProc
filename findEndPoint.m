@@ -13,6 +13,10 @@ clear skelImg;
 
 sp=find(gImg,1);
 [sp(1) sp(2)]=ind2sub(size(gImg),sp);
+% sp=[row col];
+if length(sp)~=2
+    error('sp is not a pair: %g.',sp);
+end
 nbr1=nbr8(sp);
 gImg(sp(1),sp(2))=0;
 if size(nbr1,1)~=1 % sp now is not an end point.
