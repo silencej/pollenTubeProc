@@ -12,6 +12,8 @@ if exist('path.hist','file')
 	fid=fopen('path.hist','rt');
 	oldDir=fgetl(fid);
 	fclose(fid);
+%     oldDir=strrep(oldDir,' ','\ '); % escape the space in path name.
+%     oldDir={oldDir}; % Make it a cell so space in filename will be safe.
 end
 if ~ischar(oldDir)
 	oldDir='./';
@@ -20,7 +22,7 @@ end
 [filename,pathname] = uigetfile(filterSpec,'Select Images',oldDir,'multiselect','on');
 
 if isequal(filename,0)
-	disp('User Pressed Cancel.');
+% 	disp('User Pressed Cancel.');
     filenames={0};
 	return;
 end

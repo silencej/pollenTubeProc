@@ -11,7 +11,7 @@ clear global;
 global handles;
 
 % This thre is used to cut frame.
-handles.cutFrameThre=uint8(0.1*255);
+handles.cutFrameThre=uint8(0.08*255);
 % "cutMargin" is used in:
 % 1. cutFrameFcn.
 % 2. Pad the bw image.

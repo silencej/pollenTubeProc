@@ -1,5 +1,5 @@
-function [bbSubs, bbLen, bbImg]=getLongestBranch(skelImg,pollenPos)
-% "getLongestBranch" is used to get the longest path passing the pollenPos, from a connected skeleton bw image.
+function [bbSubs, bbLen, bbImg]=getBackbone(skelImg,pollenPos)
+% "getBackbone" is used to get the longest path passing the pollenPos, from a connected skeleton bw image.
 % It's like "getLongestPath" but there is difference: the path must pass the pollenPos.
 % "bbSubs" should start with the end point closest to pollen grain, e.g.,
 % bbSubs is ordered.
@@ -20,27 +20,29 @@ if length(D)==1
 	return;
 end
 
-% Find the end point closest to pollenPos.
+% Find the end point closest to pollenPos, except for shortEP.
 shortDist=inf;
-gImg=skelImg;
+% gImg=skelImg;
 epIdx=0;
 for i=1:size(vertices,1)
-	nbr=nbr8(vertices(i,2:3));
-	if size(nbr,1)==1 % end point vertex.
+% 	nbr=nbr8(vertices(i,2:3));
+% 	if size(nbr,1)==1 % end point vertex.
+    if vertices(i,4) && ~vertices(i,5) % is end point and not shortEP.
 		dist=euDist(vertices(i,2:3),pollenPos);
-		if dist<shortDist
+        if dist<shortDist
 			shortDist=dist;
 			epIdx=i;
-		end
-	end
+        end
+    end
 end
 
 if epIdx==0 % If the pollenPos can't specify an end point, the longest path is used.
-	[Y I]=max(D(:));
-	bbLen=Y;
-	[row col]=ind2sub(size(D),I);
-	sp=vertices(row,2:3);
-	ep=vertices(col,2:3);
+% 	[Y I]=max(D(:));
+% 	bbLen=Y;
+% 	[row col]=ind2sub(size(D),I);
+% 	sp=vertices(row,2:3);
+% 	ep=vertices(col,2:3);
+    error('epIdx is zero!!!');
 else % Choose the longest path passing pollenPos.
 	[Y I]=max(D(:,epIdx));
 	bbLen=Y;

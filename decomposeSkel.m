@@ -5,6 +5,7 @@ function [backbone, branches]=decomposeSkel(skelImg,pollenPos,branchThre,debugFl
 % And, the branch should contact the backbone. Branch of branch is ignored.
 % "backbone" is structure: subs,len,bw.
 % "branches" is array of structure: subs,len,img,ratio,bbbIdx. Use branches(i).subs to access.
+% If there is no long branches, "branches" is an empty struct.
 % subs: [row col] for backbone pixels in connection order, which is good for tracing.
 % len: backbone length.
 % img: logcial image containing only the longest path.
@@ -17,12 +18,12 @@ if nargin<4
 	debugFlag=0;
 end
 
-skelImg=skelImg~=0;
+% skelImg=skelImg~=0;
 % img=img2;
 
 %% Get backbone.
 % Get the longest path passing pollenPos from a connected skeleton bw image.
-[bbSubs, bbLen, bbImg]=getLongestBranch(skelImg,pollenPos);
+[bbSubs, bbLen, bbImg]=getBackbone(skelImg,pollenPos);
 backbone.subs=bbSubs;
 backbone.len=bbLen;
 backbone.img=bbImg;
@@ -34,7 +35,13 @@ end
 %% Third branch.
 % Definition: the longest path in the skel-backbone image.
 
+branches=struct('');
+
 remImg=skelImg-bbImg; % Remaining img.
+if isempty(find(remImg,1))
+%     error('remImg is empty!');
+    return;
+end
 tempImg=keepLargest(remImg,8);
 % img=tempImg;
 [tbSubs, tbLen, tbImg]=getLongestPath(tempImg);

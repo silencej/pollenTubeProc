@@ -9,7 +9,8 @@ global gImg;
 gImg=skelImg;
 clear skelImg;
 
-% tempImg=img;
+% Save original gImg.
+tempImg=gImg;
 
 sp=find(gImg,1);
 [sp(1) sp(2)]=ind2sub(size(gImg),sp);
@@ -34,7 +35,7 @@ if size(nbr1,1)~=1 % sp now is not an end point.
     end
 end
 
-% Img=tempImg;
-
+% Restore.
+gImg=tempImg;
 
 end

@@ -3,7 +3,7 @@ function [bbSubs, bbLen, bbImg]=getLongestPath(skelImg)
 % It's used to get the backbone of whole image, and also the third branch
 % in remainder image. The third branch is the longest path in the remainder
 % image though.
-% As in getLongestBranch, "bbSubs" is well ordered, e.g. starting at the
+% As in getBackbone, "bbSubs" is well ordered, e.g. starting at the
 % joint branching point.
 
 global gImg;

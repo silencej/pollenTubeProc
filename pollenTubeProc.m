@@ -32,6 +32,9 @@ handles.branchThre=100; % Branch skel pixel num.
 handles.peakNotBranchThre=20;
 % Preset the col num for EMFM. At least 3+2=5, or 7, 9, ... 2 more each time.
 handles.emfmCol=11;
+% Bubble detection scale thre. Only bubbles with radius>coef*tubeWidth are
+% reported.
+handles.bubbleRadCoef=2;
 
 % Result: Although the gamma transform makes the bw more connected and less
 % rough, it also causes the overestimate of the circle's radius.
@@ -50,6 +53,8 @@ addpath(genpath('BaiSkeletonPruningDCE/'));
 close all;
 warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
 iptsetpref('ImshowBorder','tight'); % Make imshow display no border and thus print will save no white border.
+% Turn off noPeaks warning.
+warning off signal:findpeaks:noPeaks;
 
 for i=1:length(files)
 	procImg(files{i});
@@ -112,6 +117,7 @@ bw=imread(bwFile);
 % Read anno file.
 fid=fopen(annoFile,'rt');
 thre=fscanf(fid,'%d',1); % useless here.
+sprintf('%g',thre);
 clear thre;
 handles.pollenPos=fscanf(fid,'%d', [1,2]); % pollen position: [row col].
 if isempty(handles.pollenPos)
@@ -160,7 +166,12 @@ clear bw;
 
 [bbMat grain bbBubbles]=analyzeBackbone(backbone,branches,Idist,debugFlag);
 
-[brMat brBubbles]=analyzeBranches(branches,Idist);
+if ~isempty(branches)
+    [brMat brBubbles]=analyzeBranches(branches,Idist);
+else
+    brMat='';
+    brBubbles='';
+end
 
 
 %% Image plot.
@@ -168,7 +179,23 @@ if debugFlag
 	figure;
 	warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
 	% Use warning('query','last'); to see the warning message ID.
-	imshow(ori);
+    
+    % Plot the backbone width.
+    bbImg=backbone.img;
+    bbWimg=imdilate(bbImg,strel('disk',floor(bbMat(3))));
+    bwP=bwperim(bbWimg); % perimeter binary image.
+    ori1=ori(:,:,1); % ori 1 layer for temp use.
+    ori1(bwP)=255;
+    ori(:,:,1)=ori1;
+    ori1=ori(:,:,2); % ori 1 layer for temp use.
+    ori1(bwP)=255;
+    ori(:,:,2)=ori1;
+    ori1=ori(:,:,3); % ori 1 layer for temp use.
+    ori1(bwP)=255;
+    ori(:,:,3)=ori1;
+
+    imshow(ori);
+    
 	% Make print the default white plotted line.
 	set(gca,'Color','black');
 	set(gcf,'InvertHardCopy','off');
@@ -179,7 +206,7 @@ if debugFlag
 	% Plot the backbone.
 	plot(bbSubs(:,2), bbSubs(:,1), '.w');
 	plot(bbSubs(:,2), bbSubs(:,1), '.w');
-	
+    
 	% Plot branches.
 	for i=1:length(branches)
 		plot(branches(i).subs(:,2), branches(i).subs(:,1), '.w'); % branching position.
@@ -189,25 +216,23 @@ if debugFlag
 	radius=grain(3);
 	row=grain(1)-radius;
 	col=grain(2)-radius;
-	rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
-	plot(col+radius,row+radius,'.r','MarkerSize',15); % plot center.
+	rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
+	plot(col+radius,row+radius,'.c','MarkerSize',15); % plot center.
 	
 	% Plot bubbles on backbone.
 	for i=1:size(bbBubbles,1)
-		radius=bbBubbles(3);
-		row=bbBubbles(1)-radius;
-		col=bbBubbles(2)-radius;
+		radius=bbBubbles(i,3);
+		row=bbBubbles(i,1)-radius;
+		col=bbBubbles(i,2)-radius;
 		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','m');
 		plot(col+radius,row+radius,'.m','MarkerSize',15); % plot center.
 	end
 
 	% Plot branches bubbles.
-	% Shrink zero rows out from bubbles.
-	brBubbles=brBubbles(brBubbles(:,1)~=0,:);
 	for i=1:size(brBubbles,1)
-		radius=brBubbles(3);
-		row=brBubbles(1)-radius;
-		col=brBubbles(2)-radius;
+		radius=brBubbles(i,3);
+		row=brBubbles(i,1)-radius;
+		col=brBubbles(i,2)-radius;
 		rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','m');
 		plot(col+radius,row+radius,'.m','MarkerSize',15); % plot center.
 	end
@@ -223,8 +248,9 @@ fid=fopen(emfmFile,'w');
 fprintf(fid,'%g\t',bbMat');
 fprintf(fid,'\n');
 
-for i=size(brMat,1)
-	fprintf(fid,'%g\t',brMat'); % fprintf is column-wise.
+for i=1:size(brMat,1)
+% 	fprintf(fid,'%g\t',brMat'); % fprintf is column-wise.
+    fprintf(fid,'%g\t',brMat(i,:));
 	fprintf(fid,'\n');
 end
 
@@ -260,24 +286,14 @@ bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
 % Points largest bbProfiles, circleCenter = [row col distanceTransform].
 [pks locs]=findpeaks(bbProfileF);
 
-% Width = median+1.4826*mad.
-bbWidth=median(bbProfile)+1.4826*mad(bbProfile,1);
-
-% Get rid of all peaks lower than bbWidth.
-locs=locs(pks>bbWidth);
-pks=pks(pks>bbWidth);
-
-% pksS - sorted.
-[pksS I]=sort(pks,'descend');
-locsS=locs(I);
-
 % Find the pollen grain circle.
-grain=[0 0 0];
-grainIdx=0;
-for i=1:length(pksS)
-	if euDist(bbSubs(locsS(i),:),handles.pollenPos)<=bbProfile(locsS(i))
-		grain=[bbSubs(locsS(i),:) bbProfile(locsS(i))]; % grain: [row col radius].
-		grainIdx=i;
+% [row col radius idx].
+grain=[0 0 0 0];
+% grainLoc=0;
+for i=1:length(pks)
+	if euDist(bbSubs(locs(i),:),handles.pollenPos)<=bbProfile(locs(i))
+		grain=[bbSubs(locs(i),:) bbProfile(locs(i)) locs(i)]; % grain: [row col radius idx].
+		grainLoc=locs(i);
 		break;
 	end
 end
@@ -285,16 +301,73 @@ if ~grain(1)
 	error('Pollen Grain Calculation Error!!!');
 end
 
+% Width = median+1.4826*mad.
+% bbWidth=median(bbProfile)+1.4826*mad(bbProfile,1);
+% Update: Now only use median as an estimate for tube width.
+% bbWidth=median(bbProfile);
+% Use median of all minima as an estimate for tube width.
+[vv]=findpeaks(-bbProfileF);
+vv=-vv;
+% bbWidth=median(vv)+1.4826*mad(vv);
+bbWidth=median(vv);
+
+% % Get rid of all peaks lower than bbWidth.
+% locs=locs(pks>bbWidth);
+% pks=pks(pks>bbWidth);
+% thre=median(pks)+1.4826*mad(pks,1);
+% thre=median(bbProfile);
+% thre=min(handles.bubbleRadCoef*bbWidth,grain(3));
+thre=handles.bubbleRadCoef*bbWidth;
+locs=locs(pks>thre);
+pks=pks(pks>thre);
+
+% pksS - sorted.
+[pksS I]=sort(pks,'descend');
+locsS=locs(I);
+
 bbMat=zeros(1,handles.emfmCol);
 bbMat(1)=grain(3);
 bbMat(2)=bbLen;
 bbMat(3)=bbWidth;
 
-
 %% Cal branchIdx and Profile plot.
 
 % branchIdx is used for getting peaks which are not at branching points.
+% if branches is empty, length(branches) is 0, then branchIdx is empty.
 branchIdx=zeros(length(branches),1);
+for i=1:length(branches)
+    branchIdx(i)=branches(i).bbbIdx;
+end
+
+%%
+
+bubbleNum=0;
+bubbles=zeros(5,4); % bubbles: [row col radius idx].
+% Find the bubbles on backbone, ignore pollen grain and branching points.
+for i=1:length(pksS)
+	if locsS(i)==grainLoc
+		continue;
+	end
+	if isempty(branchIdx) || min(abs(branchIdx-locsS(i)))>handles.peakNotBranchThre;
+		gImg=bbImg;
+		sp=bbSubs(1,:);
+		bubblePos=bbSubs(locsS(i),:);
+        [len idx]=getLenOnLine(sp,bubblePos);
+		bubbleNum=bubbleNum+1;
+		bubbles(bubbleNum,:)=[bubblePos bbProfile(locsS(i)) idx];
+		bbMat(3+(bubbleNum-1)*2+1)=double(len/bbLen);
+		bbMat(3+(bubbleNum-1)*2+2)=bbProfile(locsS(i));
+	end
+end
+
+% Shrink trailing zero cols out.
+ind=find(bbMat(end:-1:1));
+bbMat=bbMat(1:end-ind+1);
+
+% Shrink zero rows out from bubbles.
+bubbles=bubbles(bubbles(:,1)~=0,:);
+
+% Plot bubbles and grain on profile.
 if debugFlag
 	figure;
 	plot(bbProfile,'-k');
@@ -302,39 +375,23 @@ if debugFlag
 	set(gcf,'InvertHardCopy','off');
 	hold on;
 	plot(bbProfileF,'-r');
+
+    plot(grain(4),bbProfileF(grain(4)),'*c'); % grain.
+    
+    for i=1:size(bubbles,1)
+        plot(bubbles(i,4),bbProfileF(bubbles(i,4)),'*m'); % bubbles position.
+    end
+
+    % if branches is empty, length(branches) is 0.
 	for i=1:length(branches)
-		branchIdx(i)=branches(i).bbbIdx;
 		plot([branches(i).bbbIdx branches(i).bbbIdx],ylim,'-b'); % branching position.
 	end
+
 	hold off;
-	legend('Unfiltered Profile','Filtered Profile','Branching Point');
+	legend('Unfiltered Profile','Filtered Profile','Grain','Bubbles on Backbone','Branching Point');
 	xlabel('Pixels along backbone');
 	ylabel('Distance transform');
 end
-
-%%
-
-bubbleNum=0;
-bubbles=zeros(5,3); % bubbles: [row col radius].
-% Find the bubbles on backbone, ignore pollen grain and branching points.
-for i=1:length(pksS)
-	if i==grainIdx
-		continue;
-	end
-	if min(abs(branchIdx-locsS(i)))>handles.peakNotBranchThre;
-		bubbleNum=bubbleNum+1;
-		bubblePos=bbSubs(locsS(i),:);
-		bubbles(bubbleNum,:)=[bubblePos bbProfile(locsS(i))];
-		gImg=bbImg;
-		sp=bbSubs(1);
-		len=getLenOnLine(sp,bubblePos);
-		bbMat(i,3+(bubbleNum-1)*2+1)=double(len/bbLen);
-		bbMat(i,3+(bubbleNum-1)*2+2)=bbProfile(locsS(i));
-	end
-end
-
-% Shrink zero rows out from bubbles.
-bubbles=bubbles(bubbles(:,1)~=0,:);
 
 end
 
@@ -347,6 +404,11 @@ function [brMat bubbles]=analyzeBranches(branches,Idist)
 global handles gImg;
 
 brNum=length(branches);
+if ~brNum
+    brMat='';
+    bubbles='';
+    return;
+end
 brMat=zeros(brNum,handles.emfmCol);
 
 bubbleNum=0;
@@ -356,7 +418,8 @@ for i=1:brNum
 
 	brImg=branches(i).img;
 	brSubs=branches(i).subs;
-
+    brLen=branches(i).len;
+    
 	brDist=Idist.*double(brImg);
 	brDist=brDist(:);
 	brProfile=brDist(sub2ind(size(brImg),brSubs(:,1),brSubs(:,2)));
@@ -368,24 +431,34 @@ for i=1:brNum
 		winLen=floor(length(brProfile)/3);
 	end
 	brProfile=double(brProfile);
-	brProfileF=filtfilt(ones(1,winLen)/winLen,1,brProfile);
-
+   	brProfileF=filtfilt(ones(1,winLen)/winLen,1,brProfile);
+    
+   	% Width = median+1.4826*mad.
+% 	brWidth=median(brProfile)+1.4826*mad(brProfile,1);
+%     brWidth=median(brProfile);
+    [vv]=findpeaks(-brProfileF);
+    vv=-vv;
+%     brWidth=median(vv)+1.4826*mad(vv);
+    brWidth=median(vv);
+    
+   	brMat(i,1)=branches(i).ratio;
+	brMat(i,2)=brLen;
+	brMat(i,3)=brWidth;
+    
 	[pks locs]=findpeaks(brProfileF);
+    if isempty(pks)
+        continue;
+    end
 
-	% Width = median+1.4826*mad.
-	brWidth=median(brProfile)+1.4826*mad(brProfile,1);
-
-	% Get rid of all peaks lower than brWidth.
-	locs=locs(pks>brWidth);
-	pks=pks(pks>brWidth);
+	% Get rid of all peaks lower than thre.
+%     thre=median(brProfile);
+    thre=handles.bubbleRadCoef*brWidth;
+	locs=locs(pks>thre);
+	pks=pks(pks>thre);
 
 	% pksS - sorted.
 	[pksS I]=sort(pks,'descend');
 	locsS=locs(I);
-
-	brMat(i,1)=branches(i).ratio;
-	brMat(i,2)=brLen;
-	brMat(i,3)=brWidth;
 
 	% bubbleNum is for bubbles on all branches, while bubbleOnBrNum is for one branch.
 	bubbleOnBrNum=0;
@@ -395,8 +468,8 @@ for i=1:brNum
 		bubblePos=brSubs(locsS(j),:);
 		bubbles(bubbleNum,:)=[bubblePos brProfile(locsS(j))];
 		bubbleOnBrNum=bubbleOnBrNum+1;
-		gImg=branches(i).img;
-		sp=brSubs(1);
+		gImg=brImg;
+		sp=brSubs(1,:);
 		len=getLenOnLine(sp,bubblePos);
 		brMat(i,3+(bubbleOnBrNum-1)*2+1)=double(len/brLen);
 		brMat(i,3+(bubbleOnBrNum-1)*2+2)=brProfile(locsS(j));
@@ -404,13 +477,17 @@ for i=1:brNum
 
 end
 
-% Shrink zero cols out.
+% Shrink tailing zero cols out.
 while isempty(find(brMat(:,end),1))
 	brMat=brMat(:,1:end-1);
 end
 
 % Shrink zero rows out from bubbles.
 bubbles=bubbles(bubbles(:,1)~=0,:);
+
+% Shrink zero rows out from bubbles.
+% 	brBubbles=brBubbles(brBubbles(:,1)~=0,:);
+
 
 end
 
