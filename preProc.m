@@ -65,7 +65,7 @@ cutFrameFcn;
 % [pathstr, name]=fileparts(filename);
 % annoFile=fullfile(pathstr,[name '.anno']);
 annoFile=[handles.filenameWoExt '.anno'];
-pollenPos=[30; 30];
+pollenPos=[floor(size(ori,1)); floor(size(ori,2)/2)];
 thre=uint8(0.2*255);
 if exist(annoFile,'file')
 	fid=fopen(annoFile,'rt');
