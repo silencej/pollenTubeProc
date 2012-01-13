@@ -238,6 +238,7 @@ if debugFlag
 	end
 
 	hold off;
+    print('-dpng','-r300','-zbuffer',[handles.filenameWoExt '_res.png']);
 end
 
 
@@ -391,6 +392,7 @@ if debugFlag
 	legend('Unfiltered Profile','Filtered Profile','Grain','Bubbles on Backbone','Branching Point');
 	xlabel('Pixels along backbone');
 	ylabel('Distance transform');
+    print('-dpng','-r300','-zbuffer',[handles.filenameWoExt '_profile.png']);
 end
 
 end
