@@ -167,10 +167,10 @@ clear bw;
 [bbMat grain bbBubbles]=analyzeBackbone(backbone,branches,Idist,debugFlag);
 
 if ~isempty(branches)
-    [brMat brBubbles]=analyzeBranches(branches,Idist);
+	[brMat brBubbles]=analyzeBranches(branches,Idist);
 else
-    brMat='';
-    brBubbles='';
+	brMat='';
+	brBubbles='';
 end
 
 
@@ -179,34 +179,34 @@ if debugFlag
 	figure;
 	warning off Images:initSize:adjustingMag; % Turn off image scaling warnings.
 	% Use warning('query','last'); to see the warning message ID.
-    
-    % Plot the backbone width.
-    bbImg=backbone.img;
-    bbWimg=imdilate(bbImg,strel('disk',floor(bbMat(3))));
-    bwP=bwperim(bbWimg); % perimeter binary image.
-    ori1=ori(:,:,1); % ori 1 layer for temp use.
-    ori1(bwP)=255;
-    ori(:,:,1)=ori1;
-    ori1=ori(:,:,2); % ori 1 layer for temp use.
-    ori1(bwP)=255;
-    ori(:,:,2)=ori1;
-    ori1=ori(:,:,3); % ori 1 layer for temp use.
-    ori1(bwP)=255;
-    ori(:,:,3)=ori1;
+	
+	% Plot the backbone width.
+	bbImg=backbone.img;
+	bbWimg=imdilate(bbImg,strel('disk',floor(bbMat(3))));
+	bwP=bwperim(bbWimg); % perimeter binary image.
+	ori1=ori(:,:,1); % ori 1 layer for temp use.
+	ori1(bwP)=255;
+	ori(:,:,1)=ori1;
+	ori1=ori(:,:,2); % ori 1 layer for temp use.
+	ori1(bwP)=255;
+	ori(:,:,2)=ori1;
+	ori1=ori(:,:,3); % ori 1 layer for temp use.
+	ori1(bwP)=255;
+	ori(:,:,3)=ori1;
 
-    imshow(ori);
-    
+	imshow(ori);
+	
 	% Make print the default white plotted line.
 	set(gca,'Color','black');
 	set(gcf,'InvertHardCopy','off');
 	hold on;
-    
-    bbSubs=backbone.subs;
+	
+	bbSubs=backbone.subs;
 	
 	% Plot the backbone.
 	plot(bbSubs(:,2), bbSubs(:,1), '.w');
 	plot(bbSubs(:,2), bbSubs(:,1), '.w');
-    
+	
 	% Plot branches.
 	for i=1:length(branches)
 		plot(branches(i).subs(:,2), branches(i).subs(:,1), '.w'); % branching position.
@@ -238,7 +238,7 @@ if debugFlag
 	end
 
 	hold off;
-    print('-dpng','-r300','-zbuffer',[handles.filenameWoExt '_res.png']);
+	print('-dpng','-r300','-zbuffer',[handles.filenameWoExt '_res.png']);
 end
 
 
@@ -251,7 +251,7 @@ fprintf(fid,'\n');
 
 for i=1:size(brMat,1)
 % 	fprintf(fid,'%g\t',brMat'); % fprintf is column-wise.
-    fprintf(fid,'%g\t',brMat(i,:));
+	fprintf(fid,'%g\t',brMat(i,:));
 	fprintf(fid,'\n');
 end
 
@@ -337,7 +337,7 @@ bbMat(3)=bbWidth;
 % if branches is empty, length(branches) is 0, then branchIdx is empty.
 branchIdx=zeros(length(branches),1);
 for i=1:length(branches)
-    branchIdx(i)=branches(i).bbbIdx;
+	branchIdx(i)=branches(i).bbbIdx;
 end
 
 %%
@@ -353,7 +353,7 @@ for i=1:length(pksS)
 		gImg=bbImg;
 		sp=bbSubs(1,:);
 		bubblePos=bbSubs(locsS(i),:);
-        [len idx]=getLenOnLine(sp,bubblePos);
+		[len idx]=getLenOnLine(sp,bubblePos);
 		bubbleNum=bubbleNum+1;
 		bubbles(bubbleNum,:)=[bubblePos bbProfile(locsS(i)) idx];
 		bbMat(3+(bubbleNum-1)*2+1)=double(len/bbLen);
@@ -377,13 +377,13 @@ if debugFlag
 	hold on;
 	plot(bbProfileF,'-r');
 
-    plot(grain(4),bbProfileF(grain(4)),'*c'); % grain.
-    
-    for i=1:size(bubbles,1)
-        plot(bubbles(i,4),bbProfileF(bubbles(i,4)),'*m'); % bubbles position.
-    end
+	plot(grain(4),bbProfileF(grain(4)),'*c'); % grain.
+	
+	for i=1:size(bubbles,1)
+		plot(bubbles(i,4),bbProfileF(bubbles(i,4)),'*m'); % bubbles position.
+	end
 
-    % if branches is empty, length(branches) is 0.
+	% if branches is empty, length(branches) is 0.
 	for i=1:length(branches)
 		plot([branches(i).bbbIdx branches(i).bbbIdx],ylim,'-b'); % branching position.
 	end
@@ -392,7 +392,7 @@ if debugFlag
 	legend('Unfiltered Profile','Filtered Profile','Grain','Bubbles on Backbone','Branching Point');
 	xlabel('Pixels along backbone');
 	ylabel('Distance transform');
-    print('-dpng','-r300','-zbuffer',[handles.filenameWoExt '_profile.png']);
+	print('-dpng','-r300','-zbuffer',[handles.filenameWoExt '_profile.png']);
 end
 
 end
@@ -407,9 +407,9 @@ global handles gImg;
 
 brNum=length(branches);
 if ~brNum
-    brMat='';
-    bubbles='';
-    return;
+	brMat='';
+	bubbles='';
+	return;
 end
 brMat=zeros(brNum,handles.emfmCol);
 
@@ -420,8 +420,8 @@ for i=1:brNum
 
 	brImg=branches(i).img;
 	brSubs=branches(i).subs;
-    brLen=branches(i).len;
-    
+	brLen=branches(i).len;
+	
 	brDist=Idist.*double(brImg);
 	brDist=brDist(:);
 	brProfile=brDist(sub2ind(size(brImg),brSubs(:,1),brSubs(:,2)));
@@ -434,27 +434,27 @@ for i=1:brNum
 	end
 	brProfile=double(brProfile);
    	brProfileF=filtfilt(ones(1,winLen)/winLen,1,brProfile);
-    
+	
    	% Width = median+1.4826*mad.
 % 	brWidth=median(brProfile)+1.4826*mad(brProfile,1);
-%     brWidth=median(brProfile);
-    [vv]=findpeaks(-brProfileF);
-    vv=-vv;
-%     brWidth=median(vv)+1.4826*mad(vv);
-    brWidth=median(vv);
-    
+%	 brWidth=median(brProfile);
+	[vv]=findpeaks(-brProfileF);
+	vv=-vv;
+%	 brWidth=median(vv)+1.4826*mad(vv);
+	brWidth=median(vv);
+	
    	brMat(i,1)=branches(i).ratio;
 	brMat(i,2)=brLen;
 	brMat(i,3)=brWidth;
-    
+	
 	[pks locs]=findpeaks(brProfileF);
-    if isempty(pks)
-        continue;
-    end
+	if isempty(pks)
+		continue;
+	end
 
 	% Get rid of all peaks lower than thre.
-%     thre=median(brProfile);
-    thre=handles.bubbleRadCoef*brWidth;
+%	 thre=median(brProfile);
+	thre=handles.bubbleRadCoef*brWidth;
 	locs=locs(pks>thre);
 	pks=pks(pks>thre);
 
