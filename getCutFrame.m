@@ -2,6 +2,15 @@ function [luCorner rlCorner]=getCutFrame(bw,cutMargin)
 % Find the suitable cutting frame, which is represented by left-upper and
 % right-lower corner.
 
+% Initialization.
+imgWidth=size(bw,2);
+imgHeight=size(bw,1);
+
+luRow=1;
+luCol=1;
+rlRow=imgHeight;
+rlCol=imgWidth;
+
 % luRow
 for j=1:size(bw,1)
 	res=find(bw(j,:), 1);
@@ -34,9 +43,6 @@ for j=luCol:size(bw,2)
 		break;
 	end
 end
-
-imgWidth=size(bw,2);
-imgHeight=size(bw,1);
 
 if luRow-cutMargin>0
 	luRow=luRow-cutMargin;

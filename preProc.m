@@ -202,15 +202,28 @@ ori=imread(handles.filename);
 % Get grayOri.
 grayOri=getGrayImg(ori);
 
+% Thresholding and Cutting.
 bw=(grayOri>handles.cutFrameThre);
 bw=imfill(bw,'holes');
 bw=(bw~=0);
-
-% Cutting.
 bw=keepLargest(bw);
 [luCorner rlCorner]=getCutFrame(bw,handles.cutMargin);
-% handles.luCorner=luCorner;
-% handles.rlCorner=rlCorner;
+plotCutFrame(luCorner,rlCorner);
+fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',handles.cutFrameThre);
+reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+while ~isempty(reply)
+    thre=uint8(str2double(reply));
+    bw=(grayOri>thre);
+    bw=imfill(bw,'holes');
+    bw=(bw~=0);
+    bw=keepLargest(bw);
+    [luCorner rlCorner]=getCutFrame(bw,handles.cutMargin);
+    plotCutFrame(luCorner,rlCorner);
+    fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',thre);
+    reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+end
+handles.cutFrameThre=thre;
+
 ori=getPart(ori,luCorner,rlCorner);
 % Get cut grayOri.
 grayOri=getGrayImg(ori);
@@ -376,3 +389,19 @@ hold off;
 end
 
 %%
+function plotCutFrame(luCorner,rlCorner)
+
+global handles ori;
+
+if ~isfield(handles,'fH') || ~ishandle(handles.fH)
+	handles.fH=figure;
+end
+
+figure(handles.fH);
+
+imshow(ori);
+hold on;
+rectangle('Position',[luCorner(2) luCorner(1) rlCorner(2)-luCorner(2) rlCorner(1)-luCorner(1)],'LineWidth',5,'LineStyle','--','EdgeColor','r');
+hold off;
+
+end
