@@ -24,9 +24,11 @@ global handles debugFlag;
 
 debugFlag=1;
 
+handles.widthFlag=0; % Set whether the width and bubbles should be calculated.
+
 % Specify global threshold in range [0 254].
 % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
-handles.skelVerNum=11; % Skeleton Vertices number. atleast 5.
+handles.skelVerNum=30; % Skeleton Vertices number. atleast 5.
 handles.branchThre=100; % Branch skel pixel num.
 % Used to set how far away a peak should be away from branching point.
 handles.peakNotBranchThre=20;
@@ -94,38 +96,61 @@ handles.filenameWoExt=fullfile(pathstr,name);
 
 % The following three files must exist. Use "preProc.m" to generate them.
 cutOriFile=[handles.filenameWoExt '.cut.png'];
-annoFile=[handles.filenameWoExt '.anno'];
+% annoFile=[handles.filenameWoExt '.anno'];
 bwFile=[handles.filenameWoExt '.bw.png'];
+somabwFile=[handles.filenameWoExt '.somabw.png'];
 if ~exist(cutOriFile,'file')
 	fprintf(1,'%s must exist to proceed %s\n.',cutOriFile,handles.filename);
 	fprintf(1,'Use preProc.m to generate it.\n');
 	return;
 end
-if ~exist(annoFile,'file')
-	fprintf(1,'%s must exist to proceed %s\n.',annoFile,handles.filename);
+%	if ~exist(annoFile,'file')
+%		fprintf(1,'%s must exist to proceed %s\n.',annoFile,handles.filename);
+%		fprintf(1,'Use preProc.m to generate it.\n');
+%		return;
+%	end
+if ~exist(bwFile,'file')
+	fprintf(1,'%s must exist to proceed %s\n.',bwFile,handles.filename);
 	fprintf(1,'Use preProc.m to generate it.\n');
 	return;
 end
-if ~exist(bwFile,'file')
-	fprintf(1,'%s must exist to proceed %s\n.',bwFile,handles.filename);
+if ~exist(somabwFile,'file')
+	fprintf(1,'%s must exist to proceed %s\n.',somabwFile,handles.filename);
 	fprintf(1,'Use preProc.m to generate it.\n');
 	return;
 end
 
 ori=imread(cutOriFile);
 bw=imread(bwFile);
-% Read anno file.
-fid=fopen(annoFile,'rt');
-thre=fscanf(fid,'%d',1); % useless here.
-sprintf('%g',thre);
-clear thre;
-handles.pollenPos=fscanf(fid,'%d', [1,2]); % pollen position: [row col].
-if isempty(handles.pollenPos)
-	fprintf(1,'Pollen Position is not listed in anno file!\n');
-	fprintf(1,'Use preProc.m to generate it.\n');
-	return;
-end
-fclose(fid);
+somabw=imread(somabwFile);
+% figure,imshow(somabw);
+% imclose the soma so it's more smooth and easy to cal the startPoints.
+somabw=imclose(somabw,strel('disk',9));
+% figure,imshow(somabw);
+
+%	% Read anno file.
+%	fid=fopen(annoFile,'rt');
+%	firstline=fgetl(fid);
+%	handles.annoVer=0;
+%	if lower(firstline(1))~='v'
+%		thre=str2num(firstline);
+%	else
+%		handles.annoVer=str2num(firstline(2:end));
+%		thre=fscanf(fid,'%d',1); % useless here, but used in preproc.m.
+%	end
+%	sprintf('%g',thre);
+%	clear thre;
+%	if ~handles.annoVer % v0.
+%		pollenPos=fscanf(fid,'%d', [1,2]); % pollen position: [row col].
+%		sprintf('%g',pollenPos);
+%		clear pollenPos;
+%	end
+%	%	if isempty(handles.pollenPos)
+%	%		fprintf(1,'Pollen Position is not listed in anno file!\n');
+%	%		fprintf(1,'Use preProc.m to generate it.\n');
+%	%		return;
+%	%	end
+%	fclose(fid);
 
 %% Skeletonization.
 
@@ -138,24 +163,54 @@ fclose(fid);
 % vertices num=4: 107.29s
 % [bw,I,x,y,x1,y1,aa,bb]=div_skeleton_new(4,1,1-bw,5);
 % [skel]=div_skeleton_new(4,1,1-bw,5);
-[skel]=div_skeleton_new(4,1,1-bw,handles.skelVerNum);
 
-skel=(skel~=0); % Convert the uint8 to logical.
-skel=parsiSkel(skel);
-
-% Save skeleton img.
-% fullSkel=getFullBw(skel);
-% [pathstr, name]=fileparts(handles.filename);
-% resStruct.path=pathstr;
-% resStruct.filename=name;
 skelFile=[handles.filenameWoExt '.skel.png'];
-imwrite(skel,skelFile,'png');
+% if exist(skelFile,'file')
+% %     skel=imread(skelFile);
+%     skel=bwmorph(bw,'skel',inf);
+% else
 
-%% Get backbone and branches.
+%     bw=imclose(bw,strel('disk',3));
+bw=imopen(bw,strel('disk',1));
+bw=imclose(bw,strel('disk',5));
+skel=bwmorph(bw,'thin',inf);
+% figure,imshow(skel);
+
+%     skel=bwmorph(bw,'skel',inf);
+%     figure,imshow(bw);
+%     [skel]=div_skeleton_new(4,1,1-bw,30);
+
+% [skel,I0,x,y,x1,y1,aa,bb]=div_skeleton_new(4,1,1-bw,60);
+%     [skel]=div_skeleton_new(4,1,1-bw,handles.skelVerNum);
+
+    skel=(skel~=0); % Convert the uint8 to logical.
+    skel=parsiSkel(skel);
+    
+    % Save skeleton img.
+    % fullSkel=getFullBw(skel);
+    % [pathstr, name]=fileparts(handles.filename);
+    % resStruct.path=pathstr;
+    % resStruct.filename=name;
+    imwrite(skel,skelFile,'png');
+% end
+
+figure, imshow(ori);
+hold on;
+[row col]=find(skel);
+plot(col,row,'.w');
+somaPerim=bwperim(somabw,8);
+[row col]=find(somaPerim);
+plot(col,row,'.w');
+hold off;
 
 % [bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=decomposeSkel(skel,handles.pollenPos,handles.branchThre);
-[backbone branches]=decomposeSkel(skel,handles.pollenPos,handles.branchThre);
+% [backbone branches]=decomposeSkel(skel,somabw,handles.branchThre);
+% [subMatrix labelNum]=decomposeSkel(skelImg,startPoint,labelNum);
+[rtMatrix]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
 clear skel;
+clear somabw;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 										  
 %% Find the pollen grain and bb bubble radius.
 
@@ -291,6 +346,11 @@ bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
 % [row col radius idx].
 grain=[0 0 0 0];
 % grainLoc=0;
+% pollenPos is now estimated by the pixel with largest bw-dist.
+somaDist=bwdist(somabw);
+[mv mi]=max(somaDist(:));
+sprintf(num2str(mv));
+[handles.pollenPos(1) handles.pollenPos(2)]=ind2sub(mi,size(somaDist));
 for i=1:length(pks)
 	if euDist(bbSubs(locs(i),:),handles.pollenPos)<=bbProfile(locs(i))
 		grain=[bbSubs(locs(i),:) bbProfile(locs(i)) locs(i)]; % grain: [row col radius idx].

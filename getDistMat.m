@@ -1,10 +1,11 @@
-function [D vertices]=getDistMat(skelImg)
+function [A vertices]=getDistMat(skelImg)
 % This function is used to get the Distance Matrix between each joint/end
 % point. "skelImg" must be parsiSkel bitwise image with only 1 connected
 % component!
 % "vertices": [vertexNum row col epFlag shortEpFlag]. 'epFlag'
 % denotes whether the vertex is an end point. 'shortEpFlag' denotes whether
 % the vertex is a short branch end point.
+% "A": adjacency matrix. "D": distance matrix.
 
 global gImg;
 
@@ -109,9 +110,8 @@ for i=1:size(A,1)
 end
 
 
-%% Warshall algorithm.
-
-D=fastFloyd(A);
+% Warshall algorithm.
+% D=fastFloyd(A);
 
 end
 

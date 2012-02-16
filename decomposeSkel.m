@@ -1,6 +1,9 @@
-function [backbone, branches]=decomposeSkel(skelImg,pollenPos,branchThre,debugFlag)
-% Decompose the parsi skel into backbone, and then significant branches.
+function [subMatrix labelNum]=decomposeSkel(skelImg,startPoint,labelNum)
+% Decompose the parsi skel.
+% "labelNum", as input is the present used label number, and the new label should start at labelNum+1.
+% Then return the used largest "labelNum".
 % "skelImg": binary image skeleton matrix. There should not be loop in the skeleton. skeleton pixel is 1.
+%
 % "branchThre" is used so only long enough branches in skel are got.
 % And, the branch should contact the backbone. Branch of branch is ignored.
 % "backbone" is structure: subs,len,bw.
@@ -12,140 +15,104 @@ function [backbone, branches]=decomposeSkel(skelImg,pollenPos,branchThre,debugFl
 % ratio is the length ratio of the third branch joint at the backbone from the start point of parent subs. Simply, it's the relative branching position.
 % bbbIdx is the backbone branching index in backbone subs.
 
-global gImg;
+% global gImg;
 
-if nargin<4
-	debugFlag=0;
+% if nargin<4
+% 	debugFlag=0;
+% end
+
+% "vertices": [vertexNum row col epFlag shortEpFlag].
+[A vertices]=getDistMat(skelImg);
+
+% If A==0, which means there is only one point in skelImg.
+if length(A)==1
+%	bbSubs=vertices(1,2:3);
+%	bbLen=1;
+%	bbImg=skelImg;
+	error('length(A)==1, there is only one point in skelImg!');
 end
 
-% skelImg=skelImg~=0;
-% img=img2;
-
-%% Get backbone.
-% Get the longest path passing pollenPos from a connected skeleton bw image.
-[bbSubs, bbLen, bbImg]=getBackbone(skelImg,pollenPos);
-backbone.subs=bbSubs;
-backbone.len=bbLen;
-backbone.img=bbImg;
-
-if debugFlag
-	imshow(bbImg);
-end
-
-%% Third branch.
-% Definition: the longest path in the skel-backbone image.
-
-branches=struct('');
-
-remImg=skelImg-bbImg; % Remaining img.
-if isempty(find(remImg,1))
-%     error('remImg is empty!');
-    return;
-end
-tempImg=keepLargest(remImg,8);
-% img=tempImg;
-[tbSubs, tbLen, tbImg]=getLongestPath(tempImg);
-branchNum=0;
-if tbLen>branchThre
-	branchNum=branchNum+1;
-	[ratio,bbbIdx]=getRatio(skelImg,backbone,tbImg);
-	branches(branchNum).subs=tbSubs;
-	branches(branchNum).len=tbLen;
-	branches(branchNum).img=tbImg;
-	branches(branchNum).ratio=ratio;
-	branches(branchNum).bbbIdx=bbbIdx;
-end
-while tbLen>branchThre
-	remImg=remImg-tbImg;
-	tempImg=keepLargest(remImg,8);
-    if isempty(find(tempImg,1))
-        break;
-    end
-	[tbSubs, tbLen, tbImg]=getLongestPath(tempImg);
-	% Check if the branch is connected to backbone.
-	tempImg=tbImg+bbImg;
-	[L num]=bwlabel(tempImg,8);
-	if num>1
-		continue;
-	end
-
-	if tbLen>branchThre
-		branchNum=branchNum+1;
-		[ratio,bbbIdx]=getRatio(skelImg,backbone,tbImg);
-		branches(branchNum).subs=tbSubs;
-		branches(branchNum).len=tbLen;
-		branches(branchNum).img=tbImg;
-		branches(branchNum).ratio=ratio;
-		branches(branchNum).bbbIdx=bbbIdx;
+% Find the startPoint in vertices.
+for i=1:size(vertices,1)
+	if abs(vertices(i,2)-startPoint(1))+abs(vertices(i,3)-startPoint(2))<=2
+		spIdx=vertices(i,1);
+		break;
 	end
 end
 
+D=fastFloyd(A);
+[Y I]=max(D(:,spIdx));
+bbLen=Y;
+% sp=vertices(spIdx,2:3);
+% ep=vertices(I,2:3);
+labelNum=labelNum+1;
+subMatrix(1,:)=[spIdx 0 labelNum 0 bbLen]; % Now [spIdx parentLabel label brDist bbLen]. Later on "spIdx" will be erased.
+% spVec=[spIdx 0 labelNum 0]; % The branch starting at soma is default to be: brDist=0.
+pt=1; % Present pointer on subMatrix.
+innerVertices=findInnerVers(A,spIdx,I);
+len=length(innerVertices);
+if len>1 || innerVertices~=0
+	brDistVec=zeros(len,1);
+	for i=1:len
+		brDistVec(i)=D(spIdx,innerVertices(i));
+	end
+	subMatrix=[subMatrix; innerVertices labelNum*ones(len,1) (labelNum+1:labelNum+len)' brDistVec zeros(len,1)]; % Now the "bbLen" is 0 and needs to be filled in later on.
+	labelNum=labelNum+len;
+% spVec=[spVec; innerVertices labelNum*ones(len,1) (labelNum+1:labelNum+len)' ]; % [spIdx parentLabel label brDist].
+
+	% Let the inner vertices not adjacent to each others.
+	for i=1:len-1
+		A(innerVertices(i),innerVertices(i+1))=inf;
+		A(innerVertices(i+1),innerVertices(i))=inf;
+	end
 end
 
-%%%%%%%% Sub functions. %%%%%%%%%%%%%%
+% Let the sp and ep points not adjacent to all others.
+A(I,:)=inf;
+A(:,I)=inf;
+A(spIdx,:)=inf;
+A(:,spIdx)=inf;
 
-function [ratio,bbbIdx]=getRatio(skelImg,backbone,tbImg)
-% Cal the ratio of branching point in parent subs.
-% "skelImg" is the whole parsi skel bw image.
-% "bbbIdx" is the backbone branching index.
+while pt<size(subMatrix,1)
+	pt=pt+1;
+	spIdx=subMatrix(pt,1);
+	D=fastFloyd(A);
+	D(D==inf)=0; % Make all inf entries be 0 so max will not find on them.
+	[Y I]=max(D(:,spIdx));
+	bbLen=Y;
+%	sp=vertices(spIdx,2:3);
+%	ep=vertices(I,2:3);
+%	labelNum=labelNum+1;
+%	subMatrix(end+1,:)=[0 labelNum 0 bbLen]; % [parentLabel label brDist bbLen].
 
-global gImg;
+	subMatrix(pt,end)=bbLen;
+	innerVertices=findInnerVers(A,spIdx,I);
 
-bbImg=backbone.img;
-bbSubs=backbone.subs;
-bbLen=backbone.len;
-clear backbone;
+	len=length(innerVertices);
+	if len>1 || innerVertices~=0
+		brDistVec=zeros(len,1);
+		for i=1:len
+			brDistVec(i)=D(spIdx,innerVertices(i));
+		end
+		subMatrix=[subMatrix; innerVertices labelNum*ones(len,1) (labelNum+1:labelNum+len)' brDistVec zeros(len,1)]; % Now the "bbLen" is 0 and needs to be filled in later on.
+        labelNum=labelNum+len;
 
-% img=tbImg;
-gImg=tbImg;
-sp=findEndPoint(gImg);
-gImg=tbImg;
-ep=traceToEJ(sp);
-nbrs=nbr8(ep);
-% The tb-backbone returned by getBb may contain Ren-shape. So the following.
-while nbrs(1)
-	ep=traceToEJ(nbrs);
-	nbrs=nbr8(ep);
-end
+		% Let the inner vertices not adjacent to each others.
+		for i=1:length(innerVertices)-1
+			A(innerVertices(i),innerVertices(i+1))=inf;
+			A(innerVertices(i+1),innerVertices(i))=inf;
+		end
+	end
 
-%-- For classic 4-loop-in-skel.
-% if ep(1)==2520 && ep(2)==1727
-%	 hold off;
-%	 disp();
-% end
-
-% if ep(1)==3579 && ep(2)==862
-% 	hold off;
-% 	imshow(bbImg);
-% 	figure;
-% 	imshow(img2);
-% end
-
-bbSp=bbSubs(1,:);
-gImg=skelImg;
-nbrs=nbr8(sp);
-if size(nbrs,1)==1 % sp is end point.
-	% Below can cause error if the thirdBranch is only one point, which is possible.
-%	 nbrs=nbr8(ep);
-%	 if size(nbrs,1)==1
-%		 fprintf(1,'getBackbone: tb ratio can''t cal! ep and sp both end points.\n');
-%		 ratioInBbSubs=0;
-%		 return;
-%	 end
-	gImg=bbImg;
-	[len bbbIdx]=getLenOnLine(bbSp,ep); % tb Joint Point is ep.
-elseif size(nbrs,1)>1
-	gImg=bbImg;
-	[len bbbIdx]=getLenOnLine(bbSp,sp); % tb Joint Point is sp now.
-else
-	fprintf(1,'getBackbone: Don''t know what happend.\n');
-	ratio=0;
-	return;
-end
-ratio=len/bbLen;
+	% Let the sp and ep points not adjacent to all others.
+	A(I,:)=inf;
+	A(:,I)=inf;
+	A(spIdx,:)=inf;
+	A(:,spIdx)=inf;
 
 end
 
-%%
+% Erase the "spIdx" column from subMatrix.
+subMatrix=subMatrix(:,2:end);
 
-
+end

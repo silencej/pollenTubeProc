@@ -1,10 +1,8 @@
-function [bbSubs, bbLen, bbImg]=getLongestPath(skelImg)
+function [bbSubs, bbLen, bbImg]=getLongestPath(skelImg,startPoint)
 % "getLongestPath" is used to get the longest path from a connected skeleton bw image.
-% It's used to get the backbone of whole image, and also the third branch
-% in remainder image. The third branch is the longest path in the remainder
-% image though.
 % As in getBackbone, "bbSubs" is well ordered, e.g. starting at the
 % joint branching point.
+% "startPoint" is the joint branching point.
 
 global gImg;
 
