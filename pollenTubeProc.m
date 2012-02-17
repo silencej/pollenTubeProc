@@ -43,9 +43,11 @@ handles.bubbleRadCoef=2;
 % gamma=1; % Used for image enhancement. Gamma transform with r<1 expands the low intensity levels in output. The lower gamma, the more washed-out of the image.
 
 files=getImgFileNames;
-if files{1}==0
+% if files{1}==0
+if isempty(files)
 	return;
 end
+
 if length(files)>1
 	debugFlag=0;
 	fprintf(1,'Multiple image input, thus no plot output.\n');

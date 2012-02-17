@@ -3,7 +3,7 @@ function filenames=getImgFileNames(filterSpec)
 % filterSpec should be like {'*.png;*.PNG','Images';'*.*','All'}.
 
 if nargin==0
-    filterSpec={'*.png;*.PNG;*.jpg;*.jpeg;*.JPG;*.JPEG;*.tif;*.tiff;*.TIF;*.TIFF','Images';'*.*','All'};
+	filterSpec={'*.png;*.PNG;*.jpg;*.jpeg;*.JPG;*.JPEG;*.tif;*.tiff;*.TIF;*.TIFF','Images';'*.*','All'};
 end
 
 % Open path history.
@@ -12,8 +12,8 @@ if exist('path.hist','file')
 	fid=fopen('path.hist','rt');
 	oldDir=fgetl(fid);
 	fclose(fid);
-%     oldDir=strrep(oldDir,' ','\ '); % escape the space in path name.
-%     oldDir={oldDir}; % Make it a cell so space in filename will be safe.
+%	 oldDir=strrep(oldDir,' ','\ '); % escape the space in path name.
+%	 oldDir={oldDir}; % Make it a cell so space in filename will be safe.
 end
 if ~ischar(oldDir)
 	oldDir='./';
@@ -23,13 +23,16 @@ end
 
 if isequal(filename,0)
 % 	disp('User Pressed Cancel.');
-    filenames={0};
+% 	filenames={0};
+    filenames='';
 	return;
 end
 
-fid=fopen('path.hist','wt');
-fprintf(fid,'%s',pathname);
-fclose(fid);
+if ~strcmpi(oldDir,pathname)
+	fid=fopen('path.hist','wt');
+	fprintf(fid,'%s',pathname);
+	fclose(fid);
+end
 
 if ~iscell(filename)
 	filenames=fullfile(pathname,filename);

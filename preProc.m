@@ -28,7 +28,8 @@ handles.addFactor=2;
 handles.maskIntelThre=2000;
 
 files=getImgFileNames;
-if files{1}==0
+% if files{1}==0
+if isempty(files)
 	return;
 end
 
