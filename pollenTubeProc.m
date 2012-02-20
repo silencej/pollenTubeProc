@@ -209,6 +209,7 @@ hold off;
 % [backbone branches]=decomposeSkel(skel,somabw,handles.branchThre);
 % [subMatrix labelNum]=decomposeSkel(skelImg,startPoint,labelNum);
 [rtMatrix]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
+sprintf(rtMatrix(1));
 save([handles.filenameWoExt '.rt.mat'],'rtMatrix');
 clear skel;
 clear somabw;
