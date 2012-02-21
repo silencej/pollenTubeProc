@@ -214,6 +214,8 @@ save([handles.filenameWoExt '.rt.mat'],'rtMatrix');
 clear skel;
 clear somabw;
 
+return;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 										  
 %% Find the pollen grain and bb bubble radius.

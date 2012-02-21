@@ -303,6 +303,11 @@ bw=keepLargest(bw);
 plotCutFrame(luCorner,rlCorner);
 fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',handles.cutFrameThre);
 reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+% When the user finds the image is not good enough, he/she will directly
+% press RETURN, and the reply is empty.
+if isempty(reply)
+    error('No threshold is input. It may be because you thought the image is not good enough and gave up preprocessing.');
+end
 while ~isempty(reply)
 	thre=uint8(str2double(reply));
 	bw=(grayOri>thre);
