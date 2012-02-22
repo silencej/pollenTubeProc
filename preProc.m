@@ -29,7 +29,6 @@ handles.addFactor=2;
 handles.maskIntelThre=2000;
 
 files=getImgFileNames;
-% if files{1}==0
 if isempty(files)
 	return;
 end
@@ -59,6 +58,12 @@ handles.filenameWoExt=fullfile(pathstr,name);
 
 %% Read Anno file.
 
+annoMatFile=[handles.filenameWoExt '.anno.mat'];
+mc=[];
+if exist(annoMatFile,'file')
+    load(annoMatFile,'mc');
+end
+
 % Read thre and pollenPos from annoFile.
 % thre range: [-1 254].
 % [pathstr, name]=fileparts(filename);
@@ -66,7 +71,7 @@ handles.filenameWoExt=fullfile(pathstr,name);
 annoFile=[handles.filenameWoExt '.anno'];
 % pollenPos=[floor(size(ori,1)); floor(size(ori,2)/2)];
 % thre=uint8(0.2*255);
-thre=0; % thre will be default to otsu's threshold later on.
+oriThre=0; % thre will be default to otsu's threshold later on.
 handles.annoVer=0;
 handles.hasAnnoFile=0;
 if exist(annoFile,'file')
@@ -74,20 +79,16 @@ if exist(annoFile,'file')
 	fid=fopen(annoFile,'rt');
 	firstline=fgetl(fid);
 	if lower(firstline(1))~='v'
-		thre=str2double(firstline);
+		oriThre=str2double(firstline);
 	else
 		handles.annoVer=str2double(firstline(2:end));
-		thre=fscanf(fid,'%d',1);
+		oriThre=fscanf(fid,'%d',1);
 		handles.cutFrameThre=fscanf(fid,'%d',1);
 		handles.luCorner=fscanf(fid,'%d',[2 1]);
 		handles.rlCorner=fscanf(fid,'%d',[2 1]);
 	end
-%	oldPos=fscanf(fid,'%d', [1,2]); % pollen position: [row col].
-%	if ~isempty(oldPos)
-%		pollenPos=oldPos;
-%	end
 	fclose(fid);
-	if length(thre)>1
+	if length(oriThre)>1
 		disp('preProc: anno file contains more than 1 threshold.');
 	end
 end
@@ -142,16 +143,16 @@ if strcmp(choice,'Yes')
 	plotBwOnOri(bw);
 else % Adjust thre.
     % If thre is 0, then it defaults to be otsu's.
-    if ~thre
-        thre=graythresh(grayOri)*255;
+    if ~oriThre
+        oriThre=graythresh(grayOri)*255;
     end
-	bw=applyThre(thre);
-	fprintf(1,'======================================================================\nThe present threshold is %d.\n',thre);
+	bw=applyThre(oriThre);
+	fprintf(1,'======================================================================\nThe present threshold is %d.\n',oriThre);
 	reply=input('If you want to reset the threshold, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
 	while ~isempty(reply)
-		thre=uint8(str2double(reply));
-		bw=applyThre(thre);
-		fprintf(1,'======================================================================\nThe present threshold is %d.\n',thre);
+		oriThre=uint8(str2double(reply));
+		bw=applyThre(oriThre);
+		fprintf(1,'======================================================================\nThe present threshold is %d.\n',oriThre);
 		reply=input('If you want to reset the threshold, input here in range [0 254].\nIf the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
 	end
 end
@@ -181,51 +182,62 @@ fprintf(1,'User correction finished. Now processing, please wait...\n');
 % annoFile=fullfile(pathstr,[name '.anno']);
 fid=fopen(annoFile,'w');
 fprintf(fid,'v1'); % Version 1 anno file.
-fprintf(fid,'\n%d',thre);
+fprintf(fid,'\n%d',oriThre);
 % pollenPos=[0 0]; % It's of no use now.
 % fprintf(fid,'\n%g\t%g',floor(pollenPos(1)),floor(pollenPos(2)));
 fprintf(fid,'\n%d',handles.cutFrameThre);
 fprintf(fid,'\n%g\t%g',floor(handles.luCorner(1)),floor(handles.luCorner(2)));
 fprintf(fid,'\n%g\t%g',floor(handles.rlCorner(1)),floor(handles.rlCorner(2)));
 fclose(fid);
+
 imwrite(bw,bwFile,'png');
 
-%% Obtain the soma/pollenGrain bw image.
-infoLine='Use another specific soma/grain image? If no, the current image will be used to get soma/grain.';
-choice=questdlg(infoLine,'Use another soma image','Yes','No','Cancel','No');
-if strcmp(choice,'Cancel')
-    fprintf(1,'User canceled.');
-    return;
-end
-% if isempty(reply)
-% 	reply='n';
-% end
-% reply=lower(reply);
-% while ~strcmp(reply,'y') && ~strcmp(reply,'n')
-% 	fprintf(1,'The input is not y or n! Please input again.\n');
-% 	reply=input('Does the image have soma or grain image? (y/n [n]): ','s');
-% 	if isempty(reply)
-% 		reply='n';
-% 	end
-% 	reply=lower(reply);
-% end
 
-% If there exists a good soma image, use it. If no good soma image, then
-% use the original image and obtain the soma by increasing threshold to get
-% the brightest region, which is usually where soma exists.
-if strcmp(choice,'Yes')
-	files=getImgFileNames;
-	if files{1}==0
-		return;
-	end
-	while length(files)>1
-		fprintf(1,'Multiple soma files are input. Please choose only 1 file.\n');
-		files=getImgFileNames;
-		if files{1}==0
-			return;
-		end
-	end
-	somafile=files{1};
+%% Obtain the soma/pollenGrain bw image.
+
+somafile='';
+if ~isempty(mc)
+    somafile=mc.somafile;
+else
+    infoLine='Use another specific soma/grain image? If no, the current image will be used to get soma/grain.';
+    choice=questdlg(infoLine,'Use another soma image','Yes','No','Cancel','No');
+    if strcmp(choice,'Cancel')
+        fprintf(1,'User canceled.');
+        return;
+    end
+    % if isempty(reply)
+    % 	reply='n';
+    % end
+    % reply=lower(reply);
+    % while ~strcmp(reply,'y') && ~strcmp(reply,'n')
+    % 	fprintf(1,'The input is not y or n! Please input again.\n');
+    % 	reply=input('Does the image have soma or grain image? (y/n [n]): ','s');
+    % 	if isempty(reply)
+    % 		reply='n';
+    % 	end
+    % 	reply=lower(reply);
+    % end
+    
+    % If there exists a good soma image, use it. If no good soma image, then
+    % use the original image and obtain the soma by increasing threshold to get
+    % the brightest region, which is usually where soma exists.
+    if strcmp(choice,'Yes')
+        files=getImgFileNames;
+        if files{1}==0
+            return;
+        end
+        while length(files)>1
+            fprintf(1,'Multiple soma files are input. Please choose only 1 file.\n');
+            files=getImgFileNames;
+            if files{1}==0
+                return;
+            end
+        end
+        somafile=files{1};
+    end
+end
+
+if ~isempty(somafile)
 	% ori and grayOri are now the cutFrame soma images, the same size with the cut image.
 	ori=imread(somafile);
     luCorner=handles.luCorner;
@@ -234,14 +246,18 @@ if strcmp(choice,'Yes')
 	grayOri=getGrayImg(ori);
 end
 
-thre=graythresh(grayOri)*255;
-bw=applyThre(thre);
-fprintf(1,'======================================================================\nThe present threshold is %d.\n',thre);
+if ~isempty(mc)
+    somaThre=mc.somaThre;
+else
+    somaThre=graythresh(grayOri)*255;
+end
+bw=applyThre(somaThre);
+fprintf(1,'======================================================================\nThe present threshold is %d.\n',somaThre);
 reply=input('If you want to reset the threshold, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
 while ~isempty(reply)
-    thre=uint8(str2double(reply));
-    bw=applyThre(thre);
-    fprintf(1,'======================================================================\nThe present threshold is %d.\n',thre);
+    somaThre=uint8(str2double(reply));
+    bw=applyThre(somaThre);
+    fprintf(1,'======================================================================\nThe present threshold is %d.\n',somaThre);
     reply=input('If you want to reset the threshold, input here in range [0 254].\nIf the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
 end
 
@@ -263,6 +279,18 @@ imwrite(bw,somaBwFile,'png');
 % mask=poly2mask(pos(:,1),pos(:,2),size(bw,1),size(bw,2));
 % imwrite(mask,somaBwFile,'png');
 % end
+
+%% Write anno mat file.
+% New: the annotation will be written to mat-file.
+% Mat-file Content structure: mc.
+mc.version='v2';
+mc.oriThre=oriThre;
+mc.cutFrameThre=handles.cutFrameThre;
+mc.luCorner=floor(handles.luCorner);
+mc.rlCorner=floor(handles.rlCorner);
+mc.somafile=somafile;
+mc.somaThre=somaThre;
+save(annoMatFile,'mc');
 
 % Finish Manual Anno.
 close(handles.fH);
@@ -552,3 +580,4 @@ rectangle('Position',[luCorner(2) luCorner(1) rlCorner(2)-luCorner(2) rlCorner(1
 hold off;
 
 end
+
