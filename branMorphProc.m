@@ -1,8 +1,8 @@
-function pollenTubeProc
-% PollenTubeProc.
-% Run it as 'pollenTubeProc', then a dialogue comes out asking for image file(s);
+function branMorphProc
+% branMorphProc.
+% Run it as 'branMorphProc', then a dialogue comes out asking for image file(s);
 %
-%	PollenTubeProc is free software: you can redistribute it and/or modify
+%	branMorphProc is free software: you can redistribute it and/or modify
 %	it under the terms of the GNU General Public License as published by
 %	the Free Software Foundation, either version 3 of the License, or
 %	(at your option) any later version.
@@ -20,7 +20,7 @@ function pollenTubeProc
 %	Copyright, 2011, 2012 Chaofeng Wang <owen263@gmail.com>
 
 clear global;
-fprintf(1,'PollenTubeProc is running...\n');
+fprintf(1,'branMorphProc is running...\n');
 
 global handles debugFlag;
 
