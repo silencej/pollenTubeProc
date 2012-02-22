@@ -5,6 +5,7 @@ function innerVertices=findInnerVers(A,si,ei)
 
 D=fastFloyd(A);
 innerVertices=zeros(10,1);
+pt=0;
 
 while si~=ei
 	nbrs=find(A(si,:)~=inf);
@@ -16,13 +17,14 @@ while si~=ei
 		end
 	end
 	if si~=ei
-		innerVertices(end+1)=si;
+        pt=pt+1;
+		innerVertices(pt)=si;
 	end
 end
 
-innerVertices=innerVertices(find(innerVertices));
-if isempty(innerVertices)
-	innerVertices=0;
-end
+innerVertices=innerVertices(innerVertices~=0);
+% if isempty(innerVertices)
+% 	innerVertices=0;
+% end
 
 end

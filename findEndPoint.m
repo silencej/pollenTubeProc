@@ -2,6 +2,7 @@ function sp=findEndPoint(skelImg)
 % Algorithm: find a non-zero pixel, and trace to an end point by erasing
 % along the search route.
 % The function will write on global img, but will restore it at the end.
+% The sp will be empty if skelImg is all black.
 
 % gImg is used as global img, which is used in function "nbr8".
 global gImg;
@@ -13,6 +14,9 @@ clear skelImg;
 tempImg=gImg;
 
 sp=find(gImg,1);
+if isempty(sp) % The gImg is all black!
+    return;
+end
 [sp(1) sp(2)]=ind2sub(size(gImg),sp);
 % sp=[row col];
 if length(sp)~=2

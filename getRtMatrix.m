@@ -1,7 +1,11 @@
-function [rtMatrix]=getRtMatrix(skelImg,somabw,branchThre,widthFlag)
+function [rtMatrix startPoints]=getRtMatrix(skelImg,somabw,branchThre,widthFlag)
 % Get the rooted tree matix.
 % "rtMatrix", rooted tree matrix. The format is: [parentLabel, label, brDist, bblen].
 % Every start point corresponds to a branch (including backbone).
+
+if nargin<4
+    widthFlag=0; % The default option is to process neurons, thus no width info.
+end
 
 if isempty(find(skelImg,1))
 	error('Error: The skelImg is all black!');
@@ -15,11 +19,26 @@ pImg=(dsomabw-somabw).*skelImg; % Point image.
 skelImg=skelImg.*(~somabw);
 [L num]=bwlabel(skelImg,8);
 labelNum=0; % labelNum is the present occupied label number. The new branch should start its label as labelNum+1.
-rtMatrix=[];
+if ~widthFlag
+    rtMatrix=inf(50,4); % [parentId, id, branchPos, length].
+else
+    rtMatrix=inf(50,9); % [parentId, id, branchPos, length, width, bubblePos, bubbleRatio, bubblePos, bubbleRatio].
+end
+contentPt=0;
+startPoints=zeros(num,2);
 for i=1:num
-    [startPoint(1) startPoint(2)]=find((L==i).*pImg,1);
-	[subMatrix labelNum]=decomposeSkel(L==i,startPoint,labelNum);
-	rtMatrix=[rtMatrix; subMatrix];
+    [startPoints(i,1) startPoints(i,2)]=find((L==i).*pImg,1);
+	[subMatrix labelNum]=decomposeSkel(L==i,startPoints(i,:),labelNum,widthFlag,branchThre);
+    contentLen=size(subMatrix,1);
+    if ~contentLen
+        continue;
+    end
+	rtMatrix(contentPt+1:contentPt+contentLen,:)=subMatrix;
+    contentPt=contentPt+contentLen;
+end
+rtMatrix=rtMatrix(rtMatrix(:,1)~=inf,:);
+if find(rtMatrix(:)==inf)
+    error('Inf entry in rtMatrix! Now widthFlag is 0, so this should not happen!');
 end
 
 % Re-label the soma branches so they are in length order. The less label, the longer the branch.
@@ -31,6 +50,7 @@ sbLabel=tempMatrix(sbIdx,2);
 [sbLabelS,si]=sort(sbLabel,'ascend');
 sbLen2=sbLen(si);
 [sv,si]=sort(sbLen2,'descend');
+sprintf(num2str(sv));
 for i=1:length(sbIdx)
 	if si(i)~=i
 %		rtMatrix=tempMatrix(tempMatrix(:,1)==tempMatrix(sbIdx(mi),2));

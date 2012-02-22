@@ -20,6 +20,8 @@ function pollenTubeProc
 %	Copyright, 2011, 2012 Chaofeng Wang <owen263@gmail.com>
 
 clear global;
+fprintf(1,'PollenTubeProc is running...\n');
+
 global handles debugFlag;
 
 debugFlag=1;
@@ -29,7 +31,10 @@ handles.widthFlag=0; % Set whether the width and bubbles should be calculated.
 % Specify global threshold in range [0 254].
 % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
 handles.skelVerNum=30; % Skeleton Vertices number. atleast 5.
-handles.branchThre=100; % Branch skel pixel num.
+% handles.branchThre=50; % Branch skel pixel num.
+% Leave off all branches shorter than 20 diagnal pixels: ceil(20*sqrt(2)).
+branchThreInPixel=20;
+handles.branchThre=ceil(branchThreInPixel*sqrt(2));
 % Used to set how far away a peak should be away from branching point.
 handles.peakNotBranchThre=20;
 % Preset the col num for EMFM. At least 3+2=5, or 7, 9, ... 2 more each time.
@@ -173,9 +178,18 @@ skelFile=[handles.filenameWoExt '.skel.png'];
 % else
 
 %     bw=imclose(bw,strel('disk',3));
-bw=imopen(bw,strel('disk',1));
-bw=imclose(bw,strel('disk',5));
+
+% Algorithm: first cal the rough skel by directly running image-thinning.
+% Then cal the fine skel by smoothing binary image followed by
+% image-thinning. In the end, perform AND operation on roughSkel and
+% fineSkel to get the ultimate skel image. The reason is, the fine skel may
+% be wrongly connected in parts during image dilation, while AND operation
+% could keep the original connectness information.
+% skelRough=bwmorph(bw,'thin',inf);
+% bw=imopen(bw,strel('disk',1));
+% bw=imclose(bw,strel('disk',5));
 skel=bwmorph(bw,'thin',inf);
+% skel=skelRough & skel; % Matrix AND operator.
 % figure,imshow(skel);
 
 %     skel=bwmorph(bw,'skel',inf);
@@ -196,28 +210,38 @@ skel=bwmorph(bw,'thin',inf);
     imwrite(skel,skelFile,'png');
 % end
 
-figure, imshow(ori);
-hold on;
-[row col]=find(skel);
-plot(col,row,'.w');
-somaPerim=bwperim(somabw,8);
-[row col]=find(somaPerim);
-plot(col,row,'.w');
-hold off;
-
 % [bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=decomposeSkel(skel,handles.pollenPos,handles.branchThre);
 % [backbone branches]=decomposeSkel(skel,somabw,handles.branchThre);
 % [subMatrix labelNum]=decomposeSkel(skelImg,startPoint,labelNum);
-[rtMatrix]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
-sprintf(rtMatrix(1));
+[rtMatrix startPoints]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
+
+if debugFlag
+    figure, imshow(ori);
+    hold on;
+    [row col]=find(skel);
+    plot(col,row,'.w');
+    somaPerim=bwperim(somabw,8);
+    [row col]=find(somaPerim);
+    plot(col,row,'.b');
+    for i=1:size(startPoints,1)
+        plot(startPoints(i,2),startPoints(i,1),'*r');
+    end
+    hold off;
+end
+
+sprintf(num2str(rtMatrix(1)));
 save([handles.filenameWoExt '.rt.mat'],'rtMatrix');
 clear skel;
 clear somabw;
 
 return;
 
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-										  
+	
+function noUse(ori)
+
 %% Find the pollen grain and bb bubble radius.
 
 Idist=bwdist(~bw);

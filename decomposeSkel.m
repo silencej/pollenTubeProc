@@ -1,4 +1,4 @@
-function [subMatrix labelNum]=decomposeSkel(skelImg,startPoint,labelNum)
+function [subMatrix labelNum]=decomposeSkel(skelImg,startPoint,labelNum,widthFlag,branchThre)
 % Decompose the parsi skel.
 % "labelNum", as input is the present used label number, and the new label should start at labelNum+1.
 % Then return the used largest "labelNum".
@@ -21,24 +21,43 @@ function [subMatrix labelNum]=decomposeSkel(skelImg,startPoint,labelNum)
 % 	debugFlag=0;
 % end
 
-% "vertices": [vertexNum row col epFlag shortEpFlag].
-[A vertices]=getDistMat(skelImg);
+fprintf(1,'widthFlag is %d.\n', widthFlag);
 
-% If A==0, which means there is only one point in skelImg.
-if length(A)==1
-%	bbSubs=vertices(1,2:3);
-%	bbLen=1;
-%	bbImg=skelImg;
-	error('length(A)==1, there is only one point in skelImg!');
+% "vertices": [vertexNum row col epFlag shortEpFlag].
+[A vertices]=getDistMat(skelImg,branchThre,startPoint);
+
+% If the skelImg has only a short branch and is deleted in 'getDistMat',
+% subMatrix is empty.
+if isempty(A)
+    subMatrix=[];
+    return;
 end
+
+% % If A==0, which means there is only one point in skelImg.
+% if length(A)==1
+% %	bbSubs=vertices(1,2:3);
+% %	bbLen=1;
+% %	bbImg=skelImg;
+% 	error('length(A)==1, there is only one point in skelImg!');
+% end
 
 % Find the startPoint in vertices.
+% For 'spIdx=i', the A returned by getDistMat is in the same order as vertices, so A(i,j)
+% is the adjacent distance of vertices(i) and vertices(j).
+minDist=inf;
+spIdx=0;
 for i=1:size(vertices,1)
-	if abs(vertices(i,2)-startPoint(1))+abs(vertices(i,3)-startPoint(2))<=2
-		spIdx=vertices(i,1);
-		break;
+    dist=abs(vertices(i,2)-startPoint(1))+abs(vertices(i,3)-startPoint(2));
+	if dist<minDist
+% 		spIdx=vertices(i,1);
+        spIdx=i; % see preceding comment.
+        minDist=dist;
 	end
 end
+
+subMatrix=inf(20,5);
+contentPt=1; % Content point in subMatrix.
+pt=1; % Visiting pointer on subMatrix.
 
 D=fastFloyd(A);
 [Y I]=max(D(:,spIdx));
@@ -46,19 +65,19 @@ bbLen=Y;
 % sp=vertices(spIdx,2:3);
 % ep=vertices(I,2:3);
 labelNum=labelNum+1;
+% The branch starting at soma is default to be: brDist=0.
 subMatrix(1,:)=[spIdx 0 labelNum 0 bbLen]; % Now [spIdx parentLabel label brDist bbLen]. Later on "spIdx" will be erased.
-% spVec=[spIdx 0 labelNum 0]; % The branch starting at soma is default to be: brDist=0.
-pt=1; % Present pointer on subMatrix.
 innerVertices=findInnerVers(A,spIdx,I);
-len=length(innerVertices);
-if len>1 || innerVertices~=0
+if ~isempty(innerVertices)
+    len=length(innerVertices);
 	brDistVec=zeros(len,1);
-	for i=1:len
-		brDistVec(i)=D(spIdx,innerVertices(i));
-	end
-	subMatrix=[subMatrix; innerVertices labelNum*ones(len,1) (labelNum+1:labelNum+len)' brDistVec zeros(len,1)]; % Now the "bbLen" is 0 and needs to be filled in later on.
+    for i=1:len
+        brDistVec(i)=D(spIdx,innerVertices(i));
+    end
+    % Now the "bbLen" is 0 and needs to be filled in later on.
+	subMatrix(contentPt+1:contentPt+len,:)=[innerVertices labelNum*ones(len,1) (labelNum+1:labelNum+len)' brDistVec zeros(len,1)];
+    contentPt=contentPt+len;
 	labelNum=labelNum+len;
-% spVec=[spVec; innerVertices labelNum*ones(len,1) (labelNum+1:labelNum+len)' ]; % [spIdx parentLabel label brDist].
 
 	% Let the inner vertices not adjacent to each others.
 	for i=1:len-1
@@ -73,7 +92,7 @@ A(:,I)=inf;
 A(spIdx,:)=inf;
 A(:,spIdx)=inf;
 
-while pt<size(subMatrix,1)
+while pt<contentPt
 	pt=pt+1;
 	spIdx=subMatrix(pt,1);
 	D=fastFloyd(A);
@@ -87,14 +106,15 @@ while pt<size(subMatrix,1)
 
 	subMatrix(pt,end)=bbLen;
 	innerVertices=findInnerVers(A,spIdx,I);
-
-	len=length(innerVertices);
-	if len>1 || innerVertices~=0
-		brDistVec=zeros(len,1);
-		for i=1:len
-			brDistVec(i)=D(spIdx,innerVertices(i));
-		end
-		subMatrix=[subMatrix; innerVertices labelNum*ones(len,1) (labelNum+1:labelNum+len)' brDistVec zeros(len,1)]; % Now the "bbLen" is 0 and needs to be filled in later on.
+	if ~isempty(innerVertices)
+        len=length(innerVertices);
+        brDistVec=zeros(len,1);
+        for i=1:len
+            brDistVec(i)=D(spIdx,innerVertices(i));
+        end
+        % Now the "bbLen" is 0 and needs to be filled in later on.
+		subMatrix(contentPt+1:contentPt+len,:)=[innerVertices labelNum*ones(len,1) (labelNum+1:labelNum+len)' brDistVec zeros(len,1)];
+        contentPt=contentPt+len;
         labelNum=labelNum+len;
 
 		% Let the inner vertices not adjacent to each others.
@@ -114,5 +134,7 @@ end
 
 % Erase the "spIdx" column from subMatrix.
 subMatrix=subMatrix(:,2:end);
+% Erase all inf rows.
+subMatrix=subMatrix(subMatrix(:,1)~=inf,:);
 
 end
