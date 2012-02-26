@@ -14,6 +14,21 @@ global gImg;
 diagonalDis=sqrt(2);
 
 [nbr1 isNbr4]=nbr8(sp);
+
+% NOTE: the start point ep may have 2-neighours! For example:
+% 1   @
+% 2   @
+% 3 @@@
+% 4    @@@@@@@
+% 5   @
+% 6   @
+% If the joint point is at (4,4), then the start points for traceToEJ will
+% be (3,3) and (5,3), while (3,3) has again 2-neighbours!
+% So the next check is disabled!---->
+% if size(nbr1,1)==2
+%     error('traceToEJ: the sp should be end point!');
+% end
+
 gImg(sp(1),sp(2))=0;
 % In case the input sp is an ep.
 ep=sp; % If sp is an isolated point, ep=sp.

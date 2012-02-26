@@ -1,4 +1,4 @@
-function [A vertices]=getDistMat(skelImg,shortLenThre,startPoint)
+function [A vertices skelImg]=getDistMat(skelImg,shortLenThre,startPoint)
 % This function is used to get the Distance Matrix between each joint/end
 % point. "skelImg" must be parsiSkel bitwise image with only 1 connected
 % component!
@@ -7,6 +7,7 @@ function [A vertices]=getDistMat(skelImg,shortLenThre,startPoint)
 % the vertex is a short branch end point. 'adLen' is the edge length, used to sort short branches, adLen=0 if
 % the vertex is an adjoint point.
 % "A": adjacency matrix. "D": distance matrix.
+% Output "skelImg" is the new skel with short branches cut off.
 
 % Set debugFlag to 1 if you have doubt in the correctness of 'getDistMat'.
 debugFlag=1;
@@ -77,7 +78,8 @@ end
 end
 
 function skel=cutSep(skel,vertices,shortLenThre,startPoint)
-% Cut the short branches from skel image in increasing length order, and keep the short branches if it is not a short branch any more in the process.
+% Cut the short branches from skel image in increasing length order,
+% and keep the short branches if it is not a short branch any more in the process.
 % Example:
 % 1
 % 2  @

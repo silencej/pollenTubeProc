@@ -29,19 +29,19 @@ debugFlag=1;
 % handles.widthFlag=0; % Set in the following codes.
 
 % Specify global threshold in range [0 254].
-% Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
-handles.skelVerNum=30; % Skeleton Vertices number. atleast 5.
-% handles.branchThre=50; % Branch skel pixel num.
-% Leave off all branches shorter than 20 diagnal pixels: ceil(20*sqrt(2)).
-branchThreInPixel=20;
-handles.branchThre=ceil(branchThreInPixel*sqrt(2));
-% Used to set how far away a peak should be away from branching point.
-handles.peakNotBranchThre=20;
+% % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
+% handles.skelVerNum=30; % Skeleton Vertices number. atleast 5.
+
+% % Used to set how far away a peak should be away from branching point.
+% handles.peakNotBranchThre=20;
+
 % Preset the col num for EMFM. At least 3+2=5, or 7, 9, ... 2 more each time.
-handles.emfmCol=11;
+% handles.emfmCol=11;
+
+% The following has been set in "traceBranch.m".
 % Bubble detection scale thre. Only bubbles with radius>coef*tubeWidth are
 % reported.
-handles.bubbleRadCoef=2;
+% handles.bubbleRadCoef=2;
 
 % Result: Although the gamma transform makes the bw more connected and less
 % rough, it also causes the overestimate of the circle's radius.
@@ -68,9 +68,7 @@ pathstr=fileparts(files{1});
 % Set whether the width and bubbles should be calculated.
 widthFlagFile=fullfile(pathstr,'widthFlag');
 if ~exist(widthFlagFile,'file')
-    infoLine=['There is no widthFlag file in current directory. '
-        'If the branch width is useful for the images here, '
-        'choose useWidth, otherwise noUseWidth.'];
+    infoLine='There is no widthFlag file in current directory. If the branch width is useful for the images here, choose useWidth, otherwise noUseWidth.';
     choice=questdlg(infoLine,'Generate widthFlag file','useWidth','notUseWidth','Cancel','notUseWidth');
     if strcmp(choice,'useWidth')
         handles.widthFlag=1;
@@ -88,6 +86,15 @@ else
     handles.widthFlag=fscanf(fid,'%d',1);
     fclose(fid);
 end
+
+if ~handles.widthFlag
+% handles.branchThre=50; % Branch skel pixel num.
+% Leave off all branches shorter than 20 diagnal pixels: ceil(20*sqrt(2)).
+    branchThreInPixel=20;
+else
+    branchThreInPixel=50;
+end
+handles.branchThre=ceil(branchThreInPixel*sqrt(2));
 
 for i=1:length(files)
 	procImg(files{i});
@@ -177,15 +184,18 @@ skelFile=[handles.filenameWoExt '.skel.png'];
 %     skel=bwmorph(bw,'skel',inf);
 % else
 
-skel=bwmorph(bw,'thin',inf);
+% % If the branch is fat, use Bai's method is better.
+% if ~handles.widthFlag
+    skel=bwmorph(bw,'thin',inf);
 % figure,imshow(skel);
 
 %     skel=bwmorph(bw,'skel',inf);
 %     figure,imshow(bw);
-%     [skel]=div_skeleton_new(4,1,1-bw,30);
-
+% else
+% skel=div_skeleton_new(4,1,1-bw,0);
 % [skel,I0,x,y,x1,y1,aa,bb]=div_skeleton_new(4,1,1-bw,60);
-%     [skel]=div_skeleton_new(4,1,1-bw,handles.skelVerNum);
+%     skel=div_skeleton_new(4,1,1-bw,handles.skelVerNum);
+% end
 
 % skel=(skel~=0); % Convert the uint8 to logical.
 skel=parsiSkel(skel);
@@ -196,20 +206,47 @@ imwrite(skel,skelFile,'png');
 % [bbSubs bbLen bbImg tbSubs tbLen tbImg ratioInBbSubs idxLen]=decomposeSkel(skel,handles.pollenPos,handles.branchThre);
 % [backbone branches]=decomposeSkel(skel,somabw,handles.branchThre);
 % [subMatrix labelNum]=decomposeSkel(skelImg,startPoint,labelNum);
-[rtMatrix startPoints]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
+
+if handles.widthFlag
+    distImg=bwdist(~bw);
+else
+    distImg=[];
+end
+
+%     [rtMatrix
+%     startPoints]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
 
 if debugFlag
+    [rtMatrix startPoints newSkel bubbles]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
     figure, imshow(ori);
     hold on;
+    
+    % Plot skels.
     [row col]=find(skel);
-    plot(col,row,'.w');
+    plot(col,row,'.w','Markersize',2);
+    [row col]=find(newSkel);
+    plot(col,row,'.w'); % MarkerSize=5.
+
+    % Plot soma/pollen grain.
     somaPerim=bwperim(somabw,8);
     [row col]=find(somaPerim);
     plot(col,row,'.b');
     for i=1:size(startPoints,1)
         plot(startPoints(i,2),startPoints(i,1),'*r');
     end
+        
+    % If widthFlag is off, bubbles will be empty.
+    for j=1:size(bubbles,1)
+        radius=bubbles(j,3);
+        row=bubbles(j,1)-radius;
+        col=bubbles(j,2)-radius;
+        rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
+        plot(col+radius,row+radius,'.c','MarkerSize',15); % plot center.
+    end
+    
     hold off;
+else
+    rtMatrix=getRtMatrix(skel,somabw,handles.branchThre,distImg);
 end
 
 sprintf(num2str(rtMatrix(1)));

@@ -1,15 +1,28 @@
-function [rtMatrix startPoints]=getRtMatrix(skelImg,somabw,branchThre,widthFlag)
+function [rtMatrix startPoints newSkel bubbles]=getRtMatrix(skelImg,somabw,branchThre,distImg)
 % Get the rooted tree matix.
 % "rtMatrix", rooted tree matrix. The format is: [parentLabel, label, brDist, bblen].
 % Every start point corresponds to a branch (including backbone).
 
 if nargin<4
-    widthFlag=0; % The default option is to process neurons, thus no width info.
+%     widthFlag=0; % The default option is to process neurons, thus no width info.
+    distImg=[];
+end
+if isempty(distImg)
+    widthFlag=0;
+else
+    widthFlag=1;
 end
 
 if isempty(find(skelImg,1))
 	error('Error: The skelImg is all black!');
 end
+
+debugFlag=0;
+if nargout>=2
+    debugFlag=1;
+end
+
+maxBblNum=5;
 
 % Find the start points. dilate(somabw)-somabw could give you candidates.
 dsomabw=imdilate(somabw,strel('disk',1));
@@ -22,13 +35,32 @@ labelNum=0; % labelNum is the present occupied label number. The new branch shou
 if ~widthFlag
     rtMatrix=inf(50,4); % [parentId, id, branchPos, length].
 else
-    rtMatrix=inf(50,9); % [parentId, id, branchPos, length, width, bubblePos, bubbleRatio, bubblePos, bubbleRatio].
+    rtMatrix=inf(50,5+maxBblNum*2); % [parentId, id, branchPos, length, width, bubblePos, bubbleRatio...].
 end
 contentPt=0;
 startPoints=zeros(num,2);
+
+if debugFlag
+    bubblesPt=0;
+    bubbles=zeros(30,3); % [row col radius].
+    newSkel=zeros(size(skelImg));
+end
+
 for i=1:num
     [startPoints(i,1) startPoints(i,2)]=find((L==i).*pImg,1);
-	[subMatrix labelNum]=decomposeSkel(L==i,startPoints(i,:),labelNum,widthFlag,branchThre);
+
+    if debugFlag
+        [subMatrix labelNum skelPart bubblesPart]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
+        if ~isempty(bubblesPart)
+            bblNum=size(bubblesPart,1);
+            bubbles(bubblesPt+1:bubblesPt+bblNum,:)=bubblesPart;
+            bubblesPt=bubblesPt+bblNum;
+        end
+        newSkel=skelPart | newSkel;
+    else
+        [subMatrix labelNum]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
+    end
+
     contentLen=size(subMatrix,1);
     if ~contentLen
         continue;
@@ -36,16 +68,32 @@ for i=1:num
 	rtMatrix(contentPt+1:contentPt+contentLen,:)=subMatrix;
     contentPt=contentPt+contentLen;
 end
+
+if debugFlag
+    bubbles=bubbles(bubbles(:,1)~=0,:);
+end
+
+% Clean inf rows.
 rtMatrix=rtMatrix(rtMatrix(:,1)~=inf,:);
-if find(rtMatrix(:)==inf)
-    error('Inf entry in rtMatrix! Now widthFlag is 0, so this should not happen!');
+% if find(rtMatrix(:)==inf)
+%     error('Inf entry in rtMatrix! Now widthFlag is 0, so this should not happen!');
+% end
+
+% Shrink trailing 0 cols out.
+colNum=size(rtMatrix,2);
+for i=colNum:-1:1
+    if isempty(find(rtMatrix(:,i)~=0,1))
+        rtMatrix=rtMatrix(:,1:end-1);
+    else
+        break;
+    end
 end
 
 % Re-label the soma branches so they are in length order. The less label, the longer the branch.
 % Exchange the label if the longer soma branch has larger label.
 tempMatrix=rtMatrix;
 sbIdx=find(~tempMatrix(:,1));
-sbLen=tempMatrix(sbIdx,end);
+sbLen=tempMatrix(sbIdx,4);
 sbLabel=tempMatrix(sbIdx,2);
 [sbLabelS,si]=sort(sbLabel,'ascend');
 sbLen2=sbLen(si);
@@ -58,5 +106,6 @@ for i=1:length(sbIdx)
 		rtMatrix((tempMatrix(:,2)==sbLabelS(si(i))),2)=sbLabelS(i);
 	end
 end
+
 
 end
