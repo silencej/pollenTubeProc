@@ -11,8 +11,8 @@ clear global;
 fprintf(1,'PreProc is running...\n');
 global handles;
 
-% This thre is used to cut frame.
-handles.cutFrameThre=uint8(0.08*255);
+% % This thre is used to cut frame.
+% handles.cutFrameThre=uint8(0.08*255);
 % "cutMargin" is used in:
 % 1. cutFrameFcn.
 % 2. Pad the bw image.
@@ -26,7 +26,7 @@ handles.eraseFactor=0;
 handles.addFactor=2;
 % When the mask has more pixels than maskIntelThre, the mask will be
 % intelligently dilated, otherwise no dilation.
-handles.maskIntelThre=2000;
+handles.maskIntelThre=700;
 
 files=getImgFileNames;
 if isempty(files)
@@ -332,6 +332,7 @@ bw=(bw~=0);
 bw=keepLargest(bw);
 [luCorner rlCorner]=getCutFrame(bw,handles.cutMargin);
 plotCutFrame(luCorner,rlCorner);
+thre=graythresh(grayOri)*255;
 fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',handles.cutFrameThre);
 reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
 % When the user finds the image is not good enough, he/she will directly
@@ -401,13 +402,14 @@ global grayOri;
 % grayOri=getGrayImg(ori);
 
 bw=(grayOri>thre);
-bw=imfill(bw,'holes');
 % bw=(bw~=0);
 bw=keepLargest(bw);
 
 % Bw image smoothing.
 bw=imopen(bw,strel('disk',1));
 bw=imclose(bw,strel('disk',5));
+
+bw=imfill(bw,'holes');
 
 plotBwOnOri(bw);
 
@@ -429,7 +431,8 @@ pos=api.getPosition();
 mask=poly2mask(pos(:,1),pos(:,2),size(bw,1),size(bw,2));
 while ~isempty(find(mask(:), 1))
 	fprintf(1,'The selected mask has %g pixels.\n',length(find(mask)));
-	bw=applyMask(mask,bw);
+% 	bw=applyMask(mask,bw);
+    bw=applyMaskNew(mask,bw);
 	fprintf(1,'======================================================================\nManual correction for the bitmap.\n');
 	fprintf(1,'Select a region of interest, modify, and double click if finished. If no need to correct, just double click.\n');
 	h=impoly(gca,'Closed',1);
@@ -442,22 +445,99 @@ delete(h);
 
 end
 
+
+function bw=applyMaskNew(mask,bw)
+%% New version, including:
+% 1. otsu's threshold.
+% 2. Dialog for add/delete.
+% 3. Edit backwards.
+
+global grayOri;
+% handles;
+
+bwBak=bw;
+
+mask=(mask~=0);
+andBw=mask & bw;
+andBw=(andBw~=0);
+minusBw=mask & (~bw);
+minusBw=(minusBw~=0);
+
+addFlag=1;
+% If the ROI contains mostly bw's 1s', the ROI is initially used to delete.
+if length(find(andBw(:)))>=length(find(minusBw(:)))
+    addFlag=0;
+end
+
+if addFlag
+    whatStr='background';
+    doStr='Add';
+else
+    whatStr='foreground';
+    doStr='Delete';
+end
+infoline=sprintf('You have chosen mostly %s pixels. Do %s?',whatStr,doStr);
+choice=questdlg(infoline,'Addition/Deletion','Add','Delete','Cancel',doStr);
+if strcmp(choice,'Cancel')
+    bw=[];
+    return;
+elseif strcmp(choice,'Add')
+    addFlag=1;
+else
+    addFlag=0;
+end
+
+window=uint8(grayOri.*uint8(mask));
+windowContent=window(mask);
+conLen=length(windowContent);
+if mod(conLen,2)
+    windowContent=windowContent(1:end-1);
+end
+windowContent2=reshape(windowContent,floor(conLen/2),2);
+thre=graythresh(windowContent2);
+
+if addFlag
+    threWin=im2bw(window,thre);
+    bw=bw | threWin;
+else
+    threWin=~im2bw(window,thre) & mask;
+    bw=bw-(bw&threWin);
+end
+
+% bw=imfill(bw,'holes');
+bw=keepLargest(bw);
+
+% % Bw image smoothing.
+% bw=imopen(bw,strel('disk',1));
+% bw=imclose(bw,strel('disk',5));
+
+bw=imfill(bw,'holes');
+
+plotBwOnOri(bw);
+
+infoline='Is this modification acceptable?';
+choice=questdlg(infoline,'Backwards/Keep Change','GoBack','KeepChange','KeepChange');
+if strcmp(choice,'GoBack')
+    bw=bwBak;
+    plotBwOnOri(bw);
+end
+
+end
+
 %%
 
 function bw=applyMask(mask,bw)
 
 global grayOri handles;
 
-% grayOri=getGrayImg(ori);
-
 diskSize=handles.diskSize;
 eraseFactor=handles.eraseFactor;
 addFactor=handles.addFactor;
 
 mask=(mask~=0);
-andBw=mask.*bw;
+andBw=mask & bw;
 andBw=(andBw~=0);
-minusBw=mask.*(~bw);
+minusBw=mask & (~bw);
 minusBw=(minusBw~=0);
 % If the ROI contains mostly bw's 1s', the ROI is used to erase.
 if length(find(andBw(:)))>=length(find(minusBw(:)))
