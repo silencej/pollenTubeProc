@@ -326,13 +326,14 @@ ori=imread(handles.filename);
 grayOri=getGrayImg(ori);
 
 % Thresholding and Cutting.
+handles.cutFrameThre=graythresh(grayOri)*255;
 bw=(grayOri>handles.cutFrameThre);
 bw=imfill(bw,'holes');
 bw=(bw~=0);
 bw=keepLargest(bw);
 [luCorner rlCorner]=getCutFrame(bw,handles.cutMargin);
 plotCutFrame(luCorner,rlCorner);
-thre=graythresh(grayOri)*255;
+
 fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',handles.cutFrameThre);
 reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
 % When the user finds the image is not good enough, he/she will directly
@@ -342,17 +343,17 @@ reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOth
 % end
 
 while ~isempty(reply)
-	thre=uint8(str2double(reply));
-	bw=(grayOri>thre);
+	handles.cutFrameThre=uint8(str2double(reply));
+	bw=(grayOri>handles.cutFrameThre);
 	bw=imfill(bw,'holes');
 	bw=(bw~=0);
 	bw=keepLargest(bw);
 	[luCorner rlCorner]=getCutFrame(bw,handles.cutMargin);
 	plotCutFrame(luCorner,rlCorner);
-	fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',thre);
+	fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',handles.cutFrameThre);
 	reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
 end
-handles.cutFrameThre=thre;
+% handles.cutFrameThre=thre;
 handles.luCorner=luCorner;
 handles.rlCorner=rlCorner;
 
@@ -461,7 +462,7 @@ mask=(mask~=0);
 andBw=mask & bw;
 andBw=(andBw~=0);
 minusBw=mask & (~bw);
-minusBw=(minusBw~=0);
+% minusBw=(minusBw~=0);
 
 addFlag=1;
 % If the ROI contains mostly bw's 1s', the ROI is initially used to delete.
@@ -487,17 +488,37 @@ else
     addFlag=0;
 end
 
-window=uint8(grayOri.*uint8(mask));
-windowContent=window(mask);
+if addFlag
+% window=uint8(grayOri.*uint8(mask));
+    window=uint8(grayOri.*uint8(minusBw));
+    windowContent=window(minusBw);
+else
+    window=uint8(grayOri.*uint8(andBw));
+    windowContent=window(andBw);
+end
+
 conLen=length(windowContent);
 if mod(conLen,2)
     windowContent=windowContent(1:end-1);
 end
 windowContent2=reshape(windowContent,floor(conLen/2),2);
-thre=graythresh(windowContent2);
+otsuThre=graythresh(windowContent2);
+% staThre=median(windowContent2(:))-3*1.4826*mad(windowContent2(:),1);
+oldFh=gcf;
+figure,imhist(windowContent2);
+axis tight;
+hold on;
+plot([otsuThre*255 otsuThre*255],ylim,'-r');
+% plot([staThre staThre],ylim,'-k');
+hold off;
+
+figure(oldFh);
+thre=otsuThre;
 
 if addFlag
-    threWin=im2bw(window,thre);
+        threWin=im2bw(window,thre);
+%     threWin=window>staThre;
+    figure,imshow(threWin);
     bw=bw | threWin;
 else
     threWin=~im2bw(window,thre) & mask;
