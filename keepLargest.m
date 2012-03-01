@@ -20,10 +20,15 @@ if ver<=7.5 % matlab 2007b is 7.5.0.
     [L,Num]=bwlabeln(bw,nbrWay);
     ll=zeros(Num,1);
     for j=1:Num
-        ll(j)=length(find(L==j));
+        ll(j)=sum(sum(L==j));
     end
     [mv mi]=max(ll);
+    % If there is no pixel, the largest bw will be empty.
+    if isempty(mi)
+        bw=[];
+    else
     bw=(L==mi);
+    end
 else
     % Matlab newer version is required!
     % Matlab said: bwconncomp uses less memory and sometimes faster.

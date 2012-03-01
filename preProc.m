@@ -153,6 +153,7 @@ if ~useOldBw
         oriThre=graythresh(grayOri)*255;
     end
     bw=applyThre(oriThre);
+    set(handles.fH,'Name','Global Thresholding');
     fprintf(1,'======================================================================\nThe present threshold is %d.\n',oriThre);
     reply=input('If you want to reset the threshold, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
     while ~isempty(reply)
@@ -268,6 +269,18 @@ while ~isempty(reply)
     reply=input('If you want to reset the threshold, input here in range [0 254].\nIf the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
 end
 
+% Ask if reset the region.
+infoline=sprintf('Sometimes the thresholded region doesnot contain soma/pollen. Reset if it is the case. Reset?');
+choice=questdlg(infoline,'Reset Dialog','Reset','No, keep this','Cancel','No, keep this');
+if strcmp(choice,'Cancel')
+    fprintf(1,'User canceled.');
+    return;
+end
+if strcmp(choice,'Reset')
+% Add first mask.
+    bw=addFirstSoma;
+end
+
 bw=adjustMask(bw);
 
 somaBwFile=[handles.filenameWoExt '.somabw.png'];
@@ -296,6 +309,9 @@ mc.cutFrameThre=handles.cutFrameThre;
 mc.luCorner=floor(handles.luCorner);
 mc.rlCorner=floor(handles.rlCorner);
 mc.somafile=somafile;
+if ~exist('somaThre','var')
+    somaThre=255;
+end
 mc.somaThre=somaThre;
 save(annoMatFile,'mc');
 
@@ -332,27 +348,30 @@ bw=imfill(bw,'holes');
 bw=(bw~=0);
 bw=keepLargest(bw);
 [luCorner rlCorner]=getCutFrame(bw,handles.cutMargin);
-plotCutFrame(luCorner,rlCorner);
+[luCorner rlCorner]=plotCutFrame(luCorner,rlCorner);
 
-fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',handles.cutFrameThre);
-reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+
+% fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',handles.cutFrameThre);
+% reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+
 % When the user finds the image is not good enough, he/she will directly
 % press RETURN, and the reply is empty.
 % if isempty(reply)
 %     error('No threshold is input. It may be because you thought the image is not good enough and gave up preprocessing.');
 % end
 
-while ~isempty(reply)
-	handles.cutFrameThre=uint8(str2double(reply));
-	bw=(grayOri>handles.cutFrameThre);
-	bw=imfill(bw,'holes');
-	bw=(bw~=0);
-	bw=keepLargest(bw);
-	[luCorner rlCorner]=getCutFrame(bw,handles.cutMargin);
-	plotCutFrame(luCorner,rlCorner);
-	fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',handles.cutFrameThre);
-	reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
-end
+% while ~isempty(reply)
+% 	handles.cutFrameThre=uint8(str2double(reply));
+% 	bw=(grayOri>handles.cutFrameThre);
+% 	bw=imfill(bw,'holes');
+% 	bw=(bw~=0);
+% 	bw=keepLargest(bw);
+% 	[luCorner rlCorner]=getCutFrame(bw,handles.cutMargin);
+% 	plotCutFrame(luCorner,rlCorner);
+% 	fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',handles.cutFrameThre);
+% 	reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+% end
+
 % handles.cutFrameThre=thre;
 handles.luCorner=luCorner;
 handles.rlCorner=rlCorner;
@@ -425,7 +444,7 @@ fH=handles.fH;
 figure(fH);
 fprintf(1,'======================================================================\nManual correction for the bitmap.\n');
 fprintf(1,'Select a region to add/erase, and double click if finished.\nIf no need to correct, just double click on image.\n');
-set(fH,'Name','Select a region to add/erase, and double click if finished.');
+set(fH,'Name','Select a region, double click if finished.');
 h=impoly(gca,'Closed',1);
 api=iptgetapi(h);
 pos=api.getPosition();
@@ -504,24 +523,34 @@ end
 windowContent2=reshape(windowContent,floor(conLen/2),2);
 otsuThre=graythresh(windowContent2);
 % staThre=median(windowContent2(:))-3*1.4826*mad(windowContent2(:),1);
-oldFh=gcf;
-figure,imhist(windowContent2);
-axis tight;
-hold on;
-plot([otsuThre*255 otsuThre*255],ylim,'-r');
-% plot([staThre staThre],ylim,'-k');
-hold off;
 
-figure(oldFh);
+% oldFh=gcf;
+% figure,imhist(windowContent2);
+% axis tight;
+% hold on;
+% plot([otsuThre*255 otsuThre*255],ylim,'-r');
+% % plot([staThre staThre],ylim,'-k');
+% hold off;
+% 
+% figure(oldFh);
+
 thre=otsuThre;
 
 if addFlag
-        threWin=im2bw(window,thre);
-%     threWin=window>staThre;
-    figure,imshow(threWin);
+    threWin=im2bw(window,thre);
+    %     threWin=window>staThre;
+    %     figure,imshow(threWin);
+
+    threWin=imopen(threWin,strel('disk',1));
+    threWin=imclose(threWin,strel('disk',5));
+
     bw=bw | threWin;
 else
     threWin=~im2bw(window,thre) & mask;
+    
+    threWin=imopen(threWin,strel('disk',1));
+    threWin=imclose(threWin,strel('disk',5));
+    
     bw=bw-(bw&threWin);
 end
 
@@ -673,7 +702,7 @@ end
 % end
 
 %%
-function plotCutFrame(luCorner,rlCorner)
+function [luCorner,rlCorner]=plotCutFrame(luCorner,rlCorner)
 
 global handles ori;
 
@@ -684,9 +713,43 @@ end
 figure(handles.fH);
 
 imshow(ori);
-hold on;
-rectangle('Position',[luCorner(2) luCorner(1) rlCorner(2)-luCorner(2) rlCorner(1)-luCorner(1)],'LineWidth',3,'LineStyle','--','EdgeColor','r');
-hold off;
+% hold on;
+% rectangle('Position',[luCorner(2) luCorner(1) rlCorner(2)-luCorner(2)
+% rlCorner(1)-luCorner(1)],'LineWidth',3,'LineStyle','--','EdgeColor','r');
 
+% Use imrect instead.
+h=imrect(gca, [luCorner(2) luCorner(1) rlCorner(2)-luCorner(2) rlCorner(1)-luCorner(1)]);
+fprintf(1,'Pause now awaiting for user interaction...\n');
+pause;
+fprintf(1,'Cut frame is done.\n');
+
+api = iptgetapi(h);
+rectPos=api.getPosition();
+delete(h);
+
+% hold off;
+
+luCorner(2)=floor(rectPos(1));
+luCorner(1)=floor(rectPos(2));
+rlCorner(2)=floor(rectPos(3)+rectPos(1));
+rlCorner(1)=floor(rectPos(4)+rectPos(2));
 end
 
+function bw=addFirstSoma
+
+% global handles;
+global ori;
+
+imshow(ori);
+h=impoly(gca,'Closed',1);
+api=iptgetapi(h);
+pos=api.getPosition();
+delete(h);
+bw=poly2mask(pos(:,1),pos(:,2),size(ori,1),size(ori,2));
+% Smoothing.
+bw=imopen(bw,strel('disk',1));
+bw=imclose(bw,strel('disk',5));
+
+plotBwOnOri(bw);
+
+end
