@@ -26,7 +26,9 @@ maxBblNum=5;
 
 % Find the start points. dilate(somabw)-somabw could give you candidates.
 dsomabw=imdilate(somabw,strel('disk',1));
-pImg=(dsomabw-somabw).*skelImg; % Point image.
+% NOTE: bwmorph to complete the diag to make 8-connections to
+% 4-connections is important.
+pImg=(bwmorph(dsomabw-somabw,'diag')).*skelImg; % Point image.
 
 %% The skelImg is broken into parts by somabw.
 skelImg=skelImg.*(~somabw);
@@ -47,8 +49,14 @@ if debugFlag
 end
 
 for i=1:num
-    [startPoints(i,1) startPoints(i,2)]=find((L==i).*pImg,1);
-
+    qImg=(L==i)&pImg;
+    %     if ~sum(sum(qImg))
+    %
+    %     else
+    [startPoints(i,1) startPoints(i,2)]=find(qImg,1);
+    clear qImg;
+    %     end
+    
     if debugFlag
         [subMatrix labelNum skelPart bubblesPart]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
         if ~isempty(bubblesPart)

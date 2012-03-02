@@ -26,11 +26,16 @@ global handles debugFlag;
 
 debugFlag=1;
 
-% handles.widthFlag=0; % Set in the following codes.
+% Specify whether use image thinning or Bai's method for skeletonization.
+handles.useThinFlag=1;
+if ~handles.useThinFlag
+    % % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
+    handles.skelVerNum=5; % Skeleton Vertices number. atleast 5.
+end
 
 % Specify global threshold in range [0 254].
-% % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
-% handles.skelVerNum=30; % Skeleton Vertices number. atleast 5.
+
+% handles.widthFlag=0; % Set in the following codes.
 
 % % Used to set how far away a peak should be away from branching point.
 % handles.peakNotBranchThre=20;
@@ -186,7 +191,10 @@ skelFile=[handles.filenameWoExt '.skel.png'];
 
 % % If the branch is fat, use Bai's method is better.
 % if ~handles.widthFlag
+
+if handles.useThinFlag
     skel=bwmorph(bw,'thin',inf);
+else
 % figure,imshow(skel);
 
 %     skel=bwmorph(bw,'skel',inf);
@@ -194,7 +202,8 @@ skelFile=[handles.filenameWoExt '.skel.png'];
 % else
 % skel=div_skeleton_new(4,1,1-bw,0);
 % [skel,I0,x,y,x1,y1,aa,bb]=div_skeleton_new(4,1,1-bw,60);
-%     skel=div_skeleton_new(4,1,1-bw,handles.skelVerNum);
+    skel=div_skeleton_new(4,1,1-bw,handles.skelVerNum);
+end
 % end
 
 % skel=(skel~=0); % Convert the uint8 to logical.
@@ -218,7 +227,7 @@ end
 
 if debugFlag
     [rtMatrix startPoints newSkel bubbles]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
-    figure, imshow(ori);
+    figure, imshow(ori,'Border','tight');
     hold on;
     
     % Plot skels.
@@ -245,6 +254,14 @@ if debugFlag
     end
     
     hold off;
+
+    % Save result image.
+%     [H,W] = size(ori);
+    dpi = 300;
+%     set(gcf, 'paperposition', [0 0 W/dpi H/dpi]);
+%     set(gcf, 'papersize', [W/dpi H/dpi]);
+    set(gcf,'InvertHardCopy','off');
+    print([handles.filenameWoExt '.res.png'],'-dpng',sprintf('-r%d',dpi));
 else
     rtMatrix=getRtMatrix(skel,somabw,handles.branchThre,distImg);
 end

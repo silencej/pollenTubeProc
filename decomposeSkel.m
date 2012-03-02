@@ -41,6 +41,7 @@ end
 % subMatrix is empty.
 if isempty(A)
     subMatrix=[];
+    bubbles=[];
     return;
 end
 

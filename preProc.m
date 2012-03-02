@@ -27,6 +27,9 @@ handles.addFactor=2;
 % When the mask has more pixels than maskIntelThre, the mask will be
 % intelligently dilated, otherwise no dilation.
 handles.maskIntelThre=700;
+% Initials.
+handles.luCorner=[0 0];
+handles.rlCorner=[0 0];
 
 files=getImgFileNames;
 if isempty(files)
@@ -86,6 +89,12 @@ if exist(annoFile,'file')
 		handles.cutFrameThre=fscanf(fid,'%d',1);
 		handles.luCorner=fscanf(fid,'%d',[2 1]);
 		handles.rlCorner=fscanf(fid,'%d',[2 1]);
+        if isempty(handles.luCorner)
+            handles.luCorner=[0 0];
+        end
+        if isempty(handles.rlCorner)
+            handles.rlCorner=[0 0];
+        end
 	end
 	fclose(fid);
 	if length(oriThre)>1
@@ -185,6 +194,8 @@ bw(:,end-cutMargin+1:end)=0;
 
 fprintf(1,'User correction finished. Now processing, please wait...\n');
 
+imwrite(bw,bwFile,'png');
+
 %% Save to file.
 % [pathstr, name]=fileparts(filename);
 % annoFile=fullfile(pathstr,[name '.anno']);
@@ -193,12 +204,11 @@ fprintf(fid,'v1'); % Version 1 anno file.
 fprintf(fid,'\n%d',oriThre);
 % pollenPos=[0 0]; % It's of no use now.
 % fprintf(fid,'\n%g\t%g',floor(pollenPos(1)),floor(pollenPos(2)));
-fprintf(fid,'\n%d',handles.cutFrameThre);
+cutFrameThre=0;
+fprintf(fid,'\n%d',cutFrameThre);
 fprintf(fid,'\n%g\t%g',floor(handles.luCorner(1)),floor(handles.luCorner(2)));
 fprintf(fid,'\n%g\t%g',floor(handles.rlCorner(1)),floor(handles.rlCorner(2)));
 fclose(fid);
-
-imwrite(bw,bwFile,'png');
 
 
 %% Obtain the soma/pollenGrain bw image.
