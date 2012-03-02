@@ -263,6 +263,7 @@ global gImg;
 % ei=bbVers(end);
 sp=vertices(bbVers(1),2:3);
 ep=vertices(bbVers(end),2:3);
+ap=vertices(bbVers(:),2:3); % All points on the backbone.
 
 % Sometimes the joint point resides on precedent backbone and is erased in
 % remaining skel image. We need them back, otherwise the connectness check
@@ -272,12 +273,12 @@ gImg(ep(1),ep(2))=1;
 
 % Get the backbone image bbImg, which consists of all vertices in bbVers.
 
-% Put all end points at the beginning so the erasing will start from end
-% points first, then joint points become end points and traceToEj could
-% perform on them.
-epVers=vertices(vertices(:,4)~=0,:);
-jpVers=vertices(vertices(:,4)==0,:);
-vertices=[epVers; jpVers];
+% % Put all end points at the beginning so the erasing will start from end
+% % points first, then joint points become end points and traceToEj could
+% % perform on them.
+% epVers=vertices(vertices(:,4)~=0,:);
+% jpVers=vertices(vertices(:,4)==0,:);
+% vertices=[epVers; jpVers];
 
 % NOTE: The gImg should be remaining skelImg after previous picking-up. If
 % you use the original skelImg to do this, there may be case that the
@@ -286,21 +287,47 @@ vertices=[epVers; jpVers];
 % the remaining skel, the joint point will always be a joint point or an
 % end point, and traceToEJ will recognize them easily.
 
+% Get all nbrs of the end- or joint-points to be removed, and use them as
+% the seed point for erasing.
+sv=zeros(50,2); % start vector.
+svp=0; % start vector pointer.
 for i=1:size(vertices,1)
     if ~isempty(find(bbVers==vertices(i,1),1))
         continue;
     end
     %     nbrs=nbr8(vertices(i,2:3));
     
-    epTrace=traceToEJ(vertices(i,2:3),0);
-    %         epTrace=traceToEJ(nbrs(1,:),0);
-    % If backbone's two end points is not connected because of erasing the
-    % joint pixel, then restore the joint point.
-    L=bwlabel(gImg,8);
-    if L(sp(1),sp(2))~=L(ep(1),ep(2)) % Case to keep the joint point.
+    nbrs=nbr8(vertices(i,2:3));
+    gImg(vertices(i,2),vertices(i,3))=0;
+    if ~nbrs(1)
+        continue;
+    end
+    vNum=size(nbrs,1);
+    sv(svp+1:svp+vNum,:)=nbrs;
+    svp=svp+vNum;
+end
+
+% Erase all pixels starting from seed points.
+for i=1:svp
+    epTrace=traceToEJ(sv(i,:),0);
+
+%     %         epTrace=traceToEJ(nbrs(1,:),0);
+%     % If backbone's two end points is not connected because of erasing the
+%     % joint pixel, then restore the joint point.
+%     L=bwlabel(gImg,8);
+%     if L(sp(1),sp(2))~=L(ep(1),ep(2)) % Case to keep the joint point.
+%         gImg(epTrace(1),epTrace(2))=1;
+%     end
+
+    % If the epTrace is in the bbVers, then the epTrace should be recovered
+    % and kept.
+    rowIdx=find(ap(:,1)==epTrace(1));
+    if isempty(rowIdx)
+        continue;
+    end
+    if ~isempty(find(ap(rowIdx,2)==epTrace(2),1))
         gImg(epTrace(1),epTrace(2))=1;
     end
-    
 end
 
 bbImg=gImg;
