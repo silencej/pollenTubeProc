@@ -49,6 +49,13 @@ if debugFlag
 end
 
 for i=1:num
+    
+    % If the skelImg is too small, ignore it.
+    skelNumThre=10;
+    if length(find(L==i,skelNumThre))<skelNumThre
+        continue;
+    end
+    
     qImg=(L==i)&pImg;
     %     if ~sum(sum(qImg))
     %

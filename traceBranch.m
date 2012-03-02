@@ -38,6 +38,10 @@ bbProfile=double(bbProfile);
 bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
 
 % Points largest bbProfiles, circleCenter = [row col distanceTransform].
+% % There may be a backbone of short length and can't find peaks on it.
+% if length(bbProfileF)<=3
+% 
+% end
 [pks locs]=findpeaks(bbProfileF);
 
 % Estimate backbone width.

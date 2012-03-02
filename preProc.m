@@ -13,6 +13,8 @@ global handles;
 
 % % This thre is used to cut frame.
 % handles.cutFrameThre=uint8(0.08*255);
+handles.cutFrameThre=[];
+
 % "cutMargin" is used in:
 % 1. cutFrameFcn.
 % 2. Pad the bw image.
@@ -204,8 +206,8 @@ fprintf(fid,'v1'); % Version 1 anno file.
 fprintf(fid,'\n%d',oriThre);
 % pollenPos=[0 0]; % It's of no use now.
 % fprintf(fid,'\n%g\t%g',floor(pollenPos(1)),floor(pollenPos(2)));
-cutFrameThre=0;
-fprintf(fid,'\n%d',cutFrameThre);
+handles.cutFrameThre=0;
+fprintf(fid,'\n%d',handles.cutFrameThre);
 fprintf(fid,'\n%g\t%g',floor(handles.luCorner(1)),floor(handles.luCorner(2)));
 fprintf(fid,'\n%g\t%g',floor(handles.rlCorner(1)),floor(handles.rlCorner(2)));
 fclose(fid);
@@ -352,7 +354,9 @@ ori=imread(handles.filename);
 grayOri=getGrayImg(ori);
 
 % Thresholding and Cutting.
-handles.cutFrameThre=graythresh(grayOri)*255;
+if isempty(handles.cutFrameThre)
+    handles.cutFrameThre=graythresh(grayOri)*255;
+end
 bw=(grayOri>handles.cutFrameThre);
 bw=imfill(bw,'holes');
 bw=(bw~=0);
