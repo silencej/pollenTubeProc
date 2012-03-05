@@ -57,10 +57,10 @@ if isempty(files)
 	return;
 end
 
-if length(files)>1
-	debugFlag=0;
-	fprintf(1,'Multiple image input, thus no plot output.\n');
-end
+% if length(files)>1
+% 	debugFlag=0;
+% 	fprintf(1,'Multiple image input, thus no plot output.\n');
+% end
 
 addpath(genpath('BaiSkeletonPruningDCE/'));
 close all;
@@ -97,7 +97,7 @@ if ~handles.widthFlag
 % Leave off all branches shorter than 20 diagnal pixels: ceil(20*sqrt(2)).
     branchThreInPixel=20;
 else
-    branchThreInPixel=50;
+    branchThreInPixel=70;
 end
 handles.branchThre=ceil(branchThreInPixel*sqrt(2));
 

@@ -30,6 +30,11 @@ dsomabw=imdilate(somabw,strel('disk',1));
 % 4-connections is important.
 pImg=(bwmorph(dsomabw-somabw,'diag')).*skelImg; % Point image.
 
+if ~sum(sum(pImg))
+    figure,imshow(skelImg|somabw);
+    error('The skeleton doesnot touch somabw. There may be improper annotations.');
+end
+
 %% The skelImg is broken into parts by somabw.
 skelImg=skelImg.*(~somabw);
 [L num]=bwlabel(skelImg,8);
