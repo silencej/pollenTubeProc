@@ -103,15 +103,20 @@ else
     [brSubs bbImg]=getBbSubs(vertices,[spIdx; innerVertices; I]); % brSubs starts from the start point of each branch.
     remSkelImg=skelImg-bbImg;
     if debugFlag
-        [branchInfo bubblesPart]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
+        [branchInfo isSideBranch bubblesPart]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
         bblNum=size(bubblesPart,1);
         bubbles(bubblesPt+1:bubblesPt+bblNum,:)=bubblesPart;
         bubblesPt=bubblesPt+bblNum;
         sprintf(num2str(bubblesPt));
     else
-        branchInfo=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
+        [branchInfo isSideBranch]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
     end
+    sprintf(num2str(isSideBranch));
 
+%     if isSideBranch
+%         skelImg(brSubs(:,1),brSubs(:,2))=0; % Get rid of the side branches from skelImg.
+%     end
+    
     biLen=length(branchInfo);
     if biLen>maxBblNum*2+1
 %         subMatrix=inf(20,5+length(branchInfo));
@@ -178,14 +183,19 @@ while pt<contentPt
         [brSubs bbImg]=getBbSubs(vertices,[spIdx; innerVertices; I]); % brSubs starts from the start point of each branch.
         remSkelImg=remSkelImg-bbImg;
         if debugFlag
-            [branchInfo bubblesPart]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
+            [branchInfo isSideBranch bubblesPart]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
             bblNum=size(bubblesPart,1);
             bubbles(bubblesPt+1:bubblesPt+bblNum,:)=bubblesPart;
             bubblesPt=bubblesPt+bblNum;
             sprintf(num2str(bubblesPt));
         else
-            branchInfo=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
+            [branchInfo isSideBranch]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
         end
+        
+        if isSideBranch
+            skelImg(brSubs(:,1),brSubs(:,2))=0; % Get rid of the side branches from skelImg.
+        end
+        
         biLen=length(branchInfo);
         if biLen>maxBblNum*2+1
             branchInfo=branchInfo(1:maxBblNum*2+1);
@@ -233,8 +243,13 @@ end
 
 % Erase the "spIdx" column from subMatrix.
 subMatrix=subMatrix(:,2:end);
+
 % Erase all inf rows.
 subMatrix=subMatrix(subMatrix(:,1)~=inf,:);
+
+% Erase all the side branches. The row with bbWidth=Nan is the side branch
+% row.
+subMatrix=subMatrix(isnan(subMatrix(:,5)),:);
 
 % if widthFlag
     % NOTE: The shrinking will be done in getRtMatrix.

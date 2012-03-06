@@ -1,4 +1,4 @@
-function [branchInfo bubbles]=traceBranch(bbSubs, bbDist, bbLen)
+function [branchInfo isSideBranch bubbles]=traceBranch(bbSubs, bbDist, bbLen)
 % branchInfo: [bbWidth fbPos fbRad sbPos sbRad...].
 % fb: first bubble. sb: second bubble. tb: third bubble...
 % Thus, branchInfo would be of length of 1,3,5,7,9,...
@@ -17,6 +17,9 @@ bubbleFlag=1;
 if nargout<2
     bubbleFlag=0;
 end
+
+% Flag whether the branch is a side branch in an rough bubble.
+isSideBranch=0;
 
 % Bubble detection scale thre. Only bubbles with radius>coef*tubeWidth are
 % reported.
@@ -51,8 +54,23 @@ bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
 % bbWidth=median(bbProfile);
 % 3. Use median of all minima as an estimate for tube width.
 [vv]=findpeaks(-bbProfileF);
+
+% NOTE
+% The side branch of swollen bubble: the branch appears because the
+% skeletonization function thinks the obtrusion on the bubble should have a
+% branch. Such a case shows up if the swollen tip is not so round.
+if isempty(vv)
+%     fprintf(1,'The branch here is supposed to be a side branch of a
+%     swollen bubble, so the bbWidth is NaN.\n');
+    isSideBranch=1;
+    branchInfo=nan; % Only bbWidth is returned, as NaN.
+    bubbles=zeros(0,3); % Return empty matrix with 0*3.
+    return;
+end
+
 vv=-vv;
 % bbWidth=median(vv)+1.4826*mad(vv);
+% If isempty(vv), bbWidth will be NaN.
 bbWidth=median(vv);
 
 % % Get rid of all peaks lower than bbWidth.
@@ -105,5 +123,9 @@ end
 if ~bubbleFlag
     bubbles=[];
 else
+    
+    if isnan(bbWidth)
+        sprintf('');
+    end
 
 end

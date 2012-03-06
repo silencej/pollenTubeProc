@@ -27,10 +27,10 @@ global handles debugFlag;
 debugFlag=1;
 
 % Specify whether use image thinning or Bai's method for skeletonization.
-handles.useThinFlag=1;
+handles.useThinFlag=0;
 if ~handles.useThinFlag
     % % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
-    handles.skelVerNum=5; % Skeleton Vertices number. atleast 5.
+    handles.skelVerNum=8; % Skeleton Vertices number. atleast 5.
 end
 
 % Specify global threshold in range [0 254].
