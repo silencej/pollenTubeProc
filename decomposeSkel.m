@@ -249,7 +249,7 @@ subMatrix=subMatrix(subMatrix(:,1)~=inf,:);
 
 % Erase all the side branches. The row with bbWidth=Nan is the side branch
 % row.
-subMatrix=subMatrix(isnan(subMatrix(:,5)),:);
+subMatrix=subMatrix(~isnan(subMatrix(:,5)),:);
 
 % if widthFlag
     % NOTE: The shrinking will be done in getRtMatrix.
