@@ -1,8 +1,11 @@
-function [subMatrix labelNum skelImg bubbles]=decomposeSkel(skelImg,startPoint,labelNum,branchThre,distImg,maxBblNum)
+function [subMatrix labelNum skelImg bubbles tips]=decomposeSkel(skelImg,startPoint,labelNum,branchThre,distImg,maxBblNum)
 % Decompose the parsi skel.
 % "labelNum", as input is the present used label number, and the new label should start at labelNum+1.
 % Then return the used largest "labelNum".
 % "skelImg": binary image skeleton matrix. There should not be loop in the skeleton. skeleton pixel is 1.
+%
+% subMatrix: For format please see below.
+% tips: [row col width].
 %
 % "branchThre" is used so only long enough branches in skel are got.
 % And, the branch should contact the backbone. Branch of branch is ignored.
@@ -42,6 +45,7 @@ end
 if isempty(A)
     subMatrix=[];
     bubbles=[];
+    tips=[];
     return;
 end
 
@@ -70,7 +74,7 @@ end
 if ~widthFlag
     subMatrix=inf(30,5); % Now [spIdx parentLabel label brDist bbLen]. Later on "spIdx" will be erased.
 else
-    subMatrix=inf(30,maxBblNum*2+6); % [spIdx parentLabel label brDist brLen, brWidth firstBubblePos firstBubbleRadius ...].
+    subMatrix=inf(30,maxBblNum*2+7); % [spIdx parentLabel label brDist brLen, brWidth tipWidth firstBubblePos firstBubbleRadius ...].
 end
 
 contentPt=1; % Content point in subMatrix.
@@ -91,8 +95,11 @@ innerVertices=findInnerVers(A,spIdx,I);
 if debugFlag && widthFlag
     bubblesPt=0;
     bubbles=zeros(20,3);
+    tips=zeros(10,3);
+    tipsPt=0;
 else
     bubbles=[];
+    tips=[];
 end
 
 if ~widthFlag
@@ -103,11 +110,15 @@ else
     [brSubs bbImg]=getBbSubs(vertices,[spIdx; innerVertices; I]); % brSubs starts from the start point of each branch.
     remSkelImg=skelImg-bbImg;
     if debugFlag
-        [branchInfo isSideBranch bubblesPart]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
-        bblNum=size(bubblesPart,1);
-        bubbles(bubblesPt+1:bubblesPt+bblNum,:)=bubblesPart;
-        bubblesPt=bubblesPt+bblNum;
-        sprintf(num2str(bubblesPt));
+        [branchInfo isSideBranch bubblesPart tipsPart]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
+        if ~isSideBranch
+            bblNum=size(bubblesPart,1);
+            bubbles(bubblesPt+1:bubblesPt+bblNum,:)=bubblesPart;
+            bubblesPt=bubblesPt+bblNum;
+            sprintf(num2str(bubblesPt));
+            tipsPt=tipsPt+1;
+            tips(tipsPt,:)=tipsPart;
+        end
     else
         [branchInfo isSideBranch]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
     end
@@ -125,9 +136,9 @@ else
     % Padding branchInfo and initialize the pos and rad of bubbles to 0,
     % which is the default way to align empty bubbles.
 %     branchInfo=[branchInfo; zeros(maxBblNum*2+1-length(branchInfo),1)];
-    tempInfo=zeros(maxBblNum*2+1,1);
+    tempInfo=zeros(maxBblNum*2+2,1); % brWidth tipWidth fbPos fbRad sbPos sbRad.
     tempInfo(1:biLen)=branchInfo;
-    subMatrix(1,:)=[spIdx 0 labelNum 0 bbLen tempInfo']; % brWidth fbPos fbRad sbPos sbRad.
+    subMatrix(1,:)=[spIdx 0 labelNum 0 bbLen tempInfo'];
 end
 
 if ~isempty(innerVertices)
@@ -142,7 +153,7 @@ if ~isempty(innerVertices)
     else
         % Now bbLen, branchInfo are all initialized 0 and needs to be
         % filled later on.
-        subMatrix(contentPt+1:contentPt+len,:)=[innerVertices labelNum*ones(len,1) (labelNum+1:labelNum+len)' brDistVec zeros(len,maxBblNum*2+2)];
+        subMatrix(contentPt+1:contentPt+len,:)=[innerVertices labelNum*ones(len,1) (labelNum+1:labelNum+len)' brDistVec zeros(len,maxBblNum*2+3)];
     end
     contentPt=contentPt+len;
 	labelNum=labelNum+len;
@@ -183,11 +194,15 @@ while pt<contentPt
         [brSubs bbImg]=getBbSubs(vertices,[spIdx; innerVertices; I]); % brSubs starts from the start point of each branch.
         remSkelImg=remSkelImg-bbImg;
         if debugFlag
-            [branchInfo isSideBranch bubblesPart]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
-            bblNum=size(bubblesPart,1);
-            bubbles(bubblesPt+1:bubblesPt+bblNum,:)=bubblesPart;
-            bubblesPt=bubblesPt+bblNum;
-            sprintf(num2str(bubblesPt));
+            [branchInfo isSideBranch bubblesPart tipsPart]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
+            if ~isSideBranch
+                bblNum=size(bubblesPart,1);
+                bubbles(bubblesPt+1:bubblesPt+bblNum,:)=bubblesPart;
+                bubblesPt=bubblesPt+bblNum;
+                sprintf(num2str(bubblesPt));
+                tipsPt=tipsPt+1;
+                tips(tipsPt,:)=tipsPart;
+            end
         else
             [branchInfo isSideBranch]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
         end
@@ -200,9 +215,9 @@ while pt<contentPt
         if biLen>maxBblNum*2+1
             branchInfo=branchInfo(1:maxBblNum*2+1);
         end
-        tempInfo=zeros(maxBblNum*2+1,1);
+        tempInfo=zeros(maxBblNum*2+2,1);
         tempInfo(1:biLen)=branchInfo;
-        subMatrix(pt,5:end)=[bbLen tempInfo']; % brWidth fbPos fbRad sbPos sbRad.
+        subMatrix(pt,5:end)=[bbLen tempInfo'];
     end
     
 	if ~isempty(innerVertices)
@@ -218,7 +233,7 @@ while pt<contentPt
         else
             % Now bbLen, branchInfo are all initialized 0 and needs to be
             % filled later on.
-            subMatrix(contentPt+1:contentPt+len,:)=[innerVertices labelNum*ones(len,1) (labelNum+1:labelNum+len)' brDistVec zeros(len,maxBblNum*2+2)];
+            subMatrix(contentPt+1:contentPt+len,:)=[innerVertices labelNum*ones(len,1) (labelNum+1:labelNum+len)' brDistVec zeros(len,maxBblNum*2+3)];
         end
 
         contentPt=contentPt+len;
@@ -240,6 +255,10 @@ while pt<contentPt
 end
 
 %% Finish.
+
+% Erase all 0 rows.
+bubbles=bubbles(bubbles(:,1)~=0,:);
+tips=tips(tips(:,1)~=0,:);
 
 % Erase the "spIdx" column from subMatrix.
 subMatrix=subMatrix(:,2:end);

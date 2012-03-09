@@ -1,4 +1,4 @@
-function [rtMatrix startPoints newSkel bubbles]=getRtMatrix(skelImg,somabw,branchThre,distImg)
+function [rtMatrix startPoints newSkel bubbles tips]=getRtMatrix(skelImg,somabw,branchThre,distImg)
 % Get the rooted tree matix.
 % "rtMatrix", rooted tree matrix. The format is: [parentLabel, label, brDist, bblen].
 % Every start point corresponds to a branch (including backbone).
@@ -42,7 +42,7 @@ labelNum=0; % labelNum is the present occupied label number. The new branch shou
 if ~widthFlag
     rtMatrix=inf(50,4); % [parentId, id, branchPos, length].
 else
-    rtMatrix=inf(50,5+maxBblNum*2); % [parentId, id, branchPos, length, width, bubblePos, bubbleRatio...].
+    rtMatrix=inf(50,6+maxBblNum*2); % [parentId, id, branchPos, length, width, tipWidth, bubblePos, bubbleRatio...].
 end
 contentPt=0;
 startPoints=zeros(num,2);
@@ -50,6 +50,8 @@ startPoints=zeros(num,2);
 if debugFlag
     bubblesPt=0;
     bubbles=zeros(30,3); % [row col radius].
+    tipsPt=0;
+    tips=zeros(20,3); % [row col width].
     newSkel=zeros(size(skelImg));
 end
 
@@ -70,12 +72,15 @@ for i=1:num
     %     end
     
     if debugFlag
-        [subMatrix labelNum skelPart bubblesPart]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
+        [subMatrix labelNum skelPart bubblesPart tipsPart]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
         if ~isempty(bubblesPart)
             bblNum=size(bubblesPart,1);
             bubbles(bubblesPt+1:bubblesPt+bblNum,:)=bubblesPart;
             bubblesPt=bubblesPt+bblNum;
         end
+        tipsNum=size(tipsPart,1);
+        tips(tipsPt+1:tipsPt+tipsNum,:)=tipsPart;
+        tipsPt=tipsPt+tipsNum;
         newSkel=skelPart | newSkel;
     else
         [subMatrix labelNum]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
@@ -91,6 +96,7 @@ end
 
 if debugFlag
     bubbles=bubbles(bubbles(:,1)~=0,:);
+    tips=tips(tips(:,1)~=0,:);
 end
 
 % Clean inf rows.

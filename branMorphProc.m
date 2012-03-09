@@ -22,9 +22,11 @@ function branMorphProc
 clear global;
 fprintf(1,'branMorphProc is running...\n');
 
-global handles debugFlag;
+global handles debugFlag textOutput;
 
 debugFlag=1;
+% The text output may be needed by users.
+textOutput=1;
 
 % Specify whether use image thinning or Bai's method for skeletonization.
 handles.useThinFlag=0;
@@ -97,7 +99,7 @@ if ~handles.widthFlag
 % Leave off all branches shorter than 20 diagnal pixels: ceil(20*sqrt(2)).
     branchThreInPixel=20;
 else
-    branchThreInPixel=70;
+    branchThreInPixel=50;
 end
 handles.branchThre=ceil(branchThreInPixel*sqrt(2));
 
@@ -131,7 +133,11 @@ function procImg(imgFile)
 % SwollenTip: parralell, perpendicular.
 
 
-global ori handles debugFlag;
+global ori handles debugFlag textOutput;
+
+if textOutput
+tic;
+end
 
 handles.filename=imgFile;
 [pathstr,name]=fileparts(imgFile);
@@ -226,7 +232,7 @@ end
 %     startPoints]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
 
 if debugFlag
-    [rtMatrix startPoints newSkel bubbles]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
+    [rtMatrix startPoints newSkel bubbles tips]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
     figure, imshow(ori,'Border','tight');
     hold on;
     
@@ -244,13 +250,20 @@ if debugFlag
         plot(startPoints(i,2),startPoints(i,1),'*r');
     end
         
-    % If widthFlag is off, bubbles will be empty.
+    % If widthFlag is off, bubbles and tips will be empty.
     for j=1:size(bubbles,1)
         radius=bubbles(j,3);
         row=bubbles(j,1)-radius;
         col=bubbles(j,2)-radius;
         rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
         plot(col+radius,row+radius,'.c','MarkerSize',15); % plot center.
+    end
+    for j=1:size(tips,1)
+        radius=tips(j,3);
+        row=tips(j,1)-radius;
+        col=tips(j,2)-radius;
+        rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','m');
+        plot(col+radius,row+radius,'.m','MarkerSize',15); % plot center.
     end
     
     hold off;
@@ -271,7 +284,17 @@ save([handles.filenameWoExt '.rt.mat'],'rtMatrix');
 clear skel;
 clear somabw;
 
-return;
+if textOutput
+    sepNum=12;
+    seps=repmat('=',1,sepNum);
+    seps=[seps '\n'];
+    fprintf(1,[seps 'The result of %s:\n'],handles.filename);
+    fprintf(1,'The length of major backbone = %g pixels.\n',rtMatrix(1,4));
+    fprintf(1,'The tip width of major backbone = %g pixels.\n',rtMatrix(1,6));
+    toc;
+end
+
+% return;
 
 end
 

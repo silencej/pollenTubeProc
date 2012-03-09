@@ -1,5 +1,5 @@
-function [branchInfo isSideBranch bubbles]=traceBranch(bbSubs, bbDist, bbLen)
-% branchInfo: [bbWidth fbPos fbRad sbPos sbRad...].
+function [branchInfo isSideBranch bubbles tips]=traceBranch(bbSubs, bbDist, bbLen)
+% branchInfo: [bbWidth tipWidth fbPos fbRad sbPos sbRad...].
 % fb: first bubble. sb: second bubble. tb: third bubble...
 % Thus, branchInfo would be of length of 1,3,5,7,9,...
 % NOTE: the bubbles are sorted in order of radius, not position! So the
@@ -9,6 +9,7 @@ function [branchInfo isSideBranch bubbles]=traceBranch(bbSubs, bbDist, bbLen)
 % and tbPos.
 % "bubbles": [row col radius]. Used for debugging. If there is no demanding
 % on bubbles, then return an empty matrix.
+% "tips": [row col width]. The branch tips.
 
 if nargin<3
     bbLen=0;
@@ -65,6 +66,7 @@ if isempty(vv)
     isSideBranch=1;
     branchInfo=nan; % Only bbWidth is returned, as NaN.
     bubbles=zeros(0,3); % Return empty matrix with 0*3.
+    tips=zeros(0,3);
     return;
 end
 
@@ -88,8 +90,12 @@ pks=pks(pks>thre);
 locsS=locs(I);
 
 bubbleNum=length(pksS);
-branchInfo=zeros(1+2*bubbleNum,1);
+branchInfo=zeros(2+2*bubbleNum,1);
 branchInfo(1)=bbWidth;
+
+[p,l]=findpeaks(bbProfile);
+tips=[bbSubs(l(end),:) p(end)];
+branchInfo(2)=p(end); % tip width.
 
 if bubbleFlag
     bubbles=zeros(bubbleNum,3);
@@ -109,8 +115,8 @@ for i=1:bubbleNum
 %     bubbleNum=bubbleNum+1;
 %     branchInfo(bubbleNum*2)=double(len/bbLen);
 %     branchInfo(bubbleNum*2+1)=bbProfile(locsS(i));
-    branchInfo(i*2)=double(len/bbLen);
-    branchInfo(i*2+1)=bbProfile(locsS(i));
+    branchInfo(i*2+1)=double(len/bbLen);
+    branchInfo(i*2+2)=bbProfile(locsS(i));
     if bubbleFlag
         bubbles(i,:)=[bbSubs(locsS(i),:) bbProfile(locsS(i))];
     end
@@ -119,13 +125,5 @@ end
 % % Shrink trailing zero cols out.
 % ind=find(branchInfo(end:-1:1));
 % branchInfo=branchInfo(1:end-ind+1);
-
-if ~bubbleFlag
-    bubbles=[];
-else
-    
-    if isnan(bbWidth)
-        sprintf('');
-    end
 
 end
