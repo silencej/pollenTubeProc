@@ -343,8 +343,18 @@ end
 
 % Erase all pixels starting from seed points.
 for i=1:svp
-    epTrace=traceToEJ(sv(i,:),0);
-
+    [epTrace len]=traceToEJ(sv(i,:),0);
+    % When the sv(i,:) is a Ren-shape center, or it has no nbrs, traceToEJ will not move.
+    if ~len
+        nbrs=nbr8(sv(i,:));
+        % When it has no nbrs, the branch with it has been erased.
+        if ~nbrs(1)
+            continue;
+        end
+        sv(i,:)=nbrs(1,:);
+        epTrace=traceToEJ(nbrs(1,:),0); % Use the 4-nbr as the seed point.
+    end
+    
 %     %         epTrace=traceToEJ(nbrs(1,:),0);
 %     % If backbone's two end points is not connected because of erasing the
 %     % joint pixel, then restore the joint point.
@@ -397,6 +407,11 @@ gImg=backupImg;
 bbSubs=bbSubs(bbSubs(:,1)~=0,:);
 
 if size(bbSubs,1)~=bbPnum
+    % debug.
+    figure,imshow(bbImg);
+    hold on;
+    plot(sv(1:svp,2),sv(1:svp,1),'.r');
+    hold off;
     error('decomposeSkel: bbSubs has different number of entries from bbPnum!!!\n');
 end
 

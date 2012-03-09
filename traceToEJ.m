@@ -39,7 +39,7 @@ isEndPoint=1;
 
 while (size(nbr1,1)==1 && nbr1(1)~=0) || size(nbr1,1)==2 % normal point will have 1 8-nbr since the previous one is filled!
 	% nbr1 has 2-rows indicates there may be a Ren-shape (i.e. the present pos is
-	% (1,2) or (2,3) at below. If the pos is (2,2), then it comes to be a joint.
+	% (1,2) or (2,3) at below. If the path is (3,1)->(2,2), then it comes to be a joint.
 	%1  @
 	%2  @@
 	%3 @
@@ -62,7 +62,7 @@ while (size(nbr1,1)==1 && nbr1(1)~=0) || size(nbr1,1)==2 % normal point will hav
 		%1 @ @
 		%2  @
 		%3 @
-        % Second Case: a (2,2) condition in the Ren-Shape case.
+        % Second Case: a (3,1)->(2,2) condition in the Ren-Shape case.
         isEndPoint=0;
 		break;
 	end

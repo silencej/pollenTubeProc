@@ -32,7 +32,7 @@ textOutput=1;
 handles.useThinFlag=0;
 if ~handles.useThinFlag
     % % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
-    handles.skelVerNum=8; % Skeleton Vertices number. atleast 5.
+    handles.skelVerNum=13; % Skeleton Vertices number. atleast 5.
 end
 
 % Specify global threshold in range [0 254].
@@ -285,7 +285,7 @@ clear skel;
 clear somabw;
 
 if textOutput
-    sepNum=12;
+    sepNum=20;
     seps=repmat('=',1,sepNum);
     seps=[seps '\n'];
     fprintf(1,[seps 'The result of %s:\n'],handles.filename);
@@ -293,8 +293,6 @@ if textOutput
     fprintf(1,'The tip width of major backbone = %g pixels.\n',rtMatrix(1,6));
     toc;
 end
-
-% return;
 
 end
 
