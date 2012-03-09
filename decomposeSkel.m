@@ -1,4 +1,4 @@
-function [subMatrix labelNum skelImg bubbles tips]=decomposeSkel(skelImg,startPoint,labelNum,branchThre,distImg,maxBblNum)
+function [subMatrix labelNum skelImg bubbles tips lbbImg lbbLen]=decomposeSkel(skelImg,startPoint,labelNum,branchThre,distImg,maxBblNum)
 % Decompose the parsi skel.
 % "labelNum", as input is the present used label number, and the new label should start at labelNum+1.
 % Then return the used largest "labelNum".
@@ -6,6 +6,7 @@ function [subMatrix labelNum skelImg bubbles tips]=decomposeSkel(skelImg,startPo
 %
 % subMatrix: For format please see below.
 % tips: [row col width].
+% lbbImg: the bw image of the longest backbone.
 %
 % "branchThre" is used so only long enough branches in skel are got.
 % And, the branch should contact the backbone. Branch of branch is ignored.
@@ -46,6 +47,8 @@ if isempty(A)
     subMatrix=[];
     bubbles=[];
     tips=[];
+    lbbImg=[];
+    lbbLen=0;
     return;
 end
 
@@ -110,6 +113,8 @@ else
     [brSubs bbImg]=getBbSubs(vertices,[spIdx; innerVertices; I]); % brSubs starts from the start point of each branch.
     remSkelImg=skelImg-bbImg;
     if debugFlag
+        lbbImg=bbImg;
+        lbbLen=bbLen;
         [branchInfo isSideBranch bubblesPart tipsPart]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
         if ~isSideBranch
             bblNum=size(bubblesPart,1);
@@ -121,6 +126,7 @@ else
         end
     else
         [branchInfo isSideBranch]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
+        lbbImg=[];
     end
     sprintf(num2str(isSideBranch));
 

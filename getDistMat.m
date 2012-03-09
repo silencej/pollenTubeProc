@@ -10,7 +10,7 @@ function [A vertices skelImg]=getDistMat(skelImg,shortLenThre,startPoint)
 % Output "skelImg" is the new skel with short branches cut off.
 
 % Set debugFlag to 1 if you have doubt in the correctness of 'getDistMat'.
-debugFlag=1;
+debugFlag=0;
 
 vertices=findVertices(skelImg,shortLenThre);
 
