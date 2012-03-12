@@ -1,6 +1,6 @@
 function [rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMatrix(skelImg,somabw,branchThre,distImg)
 % Get the rooted tree matix.
-% "rtMatrix", rooted tree matrix. The format is: [parentLabel, label, brDist, bblen].
+% "rtMatrix", rooted tree matrix. The format is in the following.
 % Every start point corresponds to a branch (including backbone).
 
 if nargin<4
@@ -40,7 +40,7 @@ skelImg=skelImg.*(~somabw);
 [L num]=bwlabel(skelImg,8);
 labelNum=0; % labelNum is the present occupied label number. The new branch should start its label as labelNum+1.
 if ~widthFlag
-    rtMatrix=inf(50,4); % [parentId, id, branchPos, length].
+    rtMatrix=inf(50,4); % [parentId, id, branchPos, length]. BranchPos is in pixels and the relative could be easily obtained.
 else
     rtMatrix=inf(50,6+maxBblNum*2); % [parentId, id, branchPos, length, width, tipWidth, bubblePos, bubbleRatio...].
 end
@@ -122,8 +122,11 @@ for i=colNum:-1:1
     end
 end
 
-% Re-label the soma branches so they are in length order. The less label, the longer the branch.
+% Re-labling and Rearranging.
+
+% Re-label the branches so they are in length order. The less label, the longer the branch.
 % Exchange the label if the longer soma branch has larger label.
+% Re-labe only the soma branches.
 tempMatrix=rtMatrix;
 sbIdx=find(~tempMatrix(:,1));
 sbLen=tempMatrix(sbIdx,4);
@@ -140,5 +143,39 @@ for i=1:length(sbIdx)
 	end
 end
 
+% Re-label the branches in length order rather than position order.
+% NOTE: you can comment this part out if you want the alignment in position
+% order instead of length order.
+tempMatrix=rtMatrix;
+parentIds=tempMatrix(:,2);
+parentIds=parentIds(parentIds~=0);
+visitedPids=[];
+for i=1:length(parentIds)
+    if ~isempty(find(visitedPids==parentIds(i),1))
+        continue;
+    end
+    partIdx=find(tempMatrix(:,1)==parentIds(i));
+    childLen=tempMatrix(partIdx,4);
+    childIds=tempMatrix(partIdx,2);
+    [childIdsS,si]=sort(childIds,'ascend');
+    childLen2=childLen(si);
+    [sv,si]=sort(childLen2,'descend');
+    sprintf(num2str(sv));
+    for j=1:length(partIdx)
+        if si(j)~=j
+            rtMatrix((tempMatrix(:,1)==childIdsS(si(j))),1)=childIdsS(j);
+            rtMatrix((tempMatrix(:,2)==childIdsS(si(j))),2)=childIdsS(j);
+        end
+    end
+end
 
+% Rearrange.
+% The sort in matlab keeps the previous order in the case of equal numbers.
+% First sort the childIds, then parentIds.
+[v,si]=sort(rtMatrix(:,2),'ascend');
+sprintf(num2str(v(1)));
+rtMatrix=rtMatrix(si,:);
+[v,si]=sort(rtMatrix(:,1),'ascend');
+sprintf(num2str(v(1)));
+rtMatrix=rtMatrix(si,:);
 end

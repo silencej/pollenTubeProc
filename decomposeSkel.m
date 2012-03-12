@@ -134,7 +134,7 @@ else
 %         skelImg(brSubs(:,1),brSubs(:,2))=0; % Get rid of the side branches from skelImg.
 %     end
     
-    biLen=length(branchInfo);
+    biLen=length(branchInfo); % branchInfo length.
     if biLen>maxBblNum*2+1
 %         subMatrix=inf(20,5+length(branchInfo));
         branchInfo=branchInfo(1:maxBblNum*2+1);
@@ -151,7 +151,9 @@ if ~isempty(innerVertices)
     len=length(innerVertices);
 	brDistVec=zeros(len,1);
     for i=1:len
-        brDistVec(i)=D(spIdx,innerVertices(i));
+        %         brDistVec(i)=D(spIdx,innerVertices(i));
+        % Relative branching pos.
+        brDistVec(i)=D(spIdx,innerVertices(i))/bbLen;
     end
     if ~widthFlag
         % Now the "bbLen" is 0 and needs to be filled in later on.
@@ -230,7 +232,7 @@ while pt<contentPt
         len=length(innerVertices);
         brDistVec=zeros(len,1);
         for i=1:len
-            brDistVec(i)=D(spIdx,innerVertices(i));
+            brDistVec(i)=D(spIdx,innerVertices(i))/bbLen;
         end
         
         if ~widthFlag
