@@ -350,7 +350,15 @@ for i=1:size(vertices,1)
 end
 
 % Erase all pixels starting from seed points.
+verRow=ap(:,1);
+verCol=ap(:,2);
 for i=1:svp
+    % If the sv is on the bbPath, then don't do traceToEJ for erasing.
+    if ~isempty(find(verCol(verRow==sv(i,1))==sv(i,2),1))
+%     if ~isempty(find(bbVers==sv(i,1),1))
+        continue;
+    end
+    
     [epTrace len]=traceToEJ(sv(i,:),0);
     % When the sv(i,:) is a Ren-shape center, or it has no nbrs, traceToEJ will not move.
     if ~len

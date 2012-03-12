@@ -48,19 +48,11 @@ bbProfileF=filtfilt(ones(1,winLen)/winLen,1,bbProfile);
 % end
 [pks locs]=findpeaks(bbProfileF);
 
-% Estimate backbone width.
-% 1. Ordinary estimate.
-% bbWidth=median(bbProfile)+1.4826*mad(bbProfile,1);
-% 2. Only use median as an estimate for tube width.
-% bbWidth=median(bbProfile);
-% 3. Use median of all minima as an estimate for tube width.
-[vv]=findpeaks(-bbProfileF);
-
 % NOTE
 % The side branch of swollen bubble: the branch appears because the
 % skeletonization function thinks the obtrusion on the bubble should have a
 % branch. Such a case shows up if the swollen tip is not so round.
-if isempty(vv)
+if isempty(pks)
 %     fprintf(1,'The branch here is supposed to be a side branch of a
 %     swollen bubble, so the bbWidth is NaN.\n');
     isSideBranch=1;
@@ -70,10 +62,23 @@ if isempty(vv)
     return;
 end
 
-vv=-vv;
-% bbWidth=median(vv)+1.4826*mad(vv);
-% If isempty(vv), bbWidth will be NaN.
-bbWidth=median(vv);
+% Estimate backbone width.
+% 1. Ordinary estimate.
+% bbWidth=median(bbProfile)+1.4826*mad(bbProfile,1);
+% 2. Only use median as an estimate for tube width.
+% bbWidth=median(bbProfile);
+% 3. Use median of all minima as an estimate for tube width.
+[vv]=findpeaks(-bbProfileF);
+
+if  ~isempty(vv)
+    vv=-vv;
+    % bbWidth=median(vv)+1.4826*mad(vv);
+    % If isempty(vv), bbWidth will be NaN.
+    bbWidth=median(vv);
+else
+    % If there is no vallies, then the bbWidth is estimated by the median.
+    bbWidth=median(bbProfileF);
+end
 
 % % Get rid of all peaks lower than bbWidth.
 % locs=locs(pks>bbWidth);
