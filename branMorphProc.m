@@ -233,7 +233,6 @@ end
 
 if debugFlag
     [rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
-    
     % Plot the ori with longest backbone width.
     lbbWimg=imdilate(lbbImg,strel('disk',floor(rtMatrix(1,5))));
     bwP=bwperim(lbbWimg); % perimeter binary image.
