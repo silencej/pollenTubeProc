@@ -232,7 +232,7 @@ end
 %     startPoints]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
 
 if debugFlag
-    [rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
+    [fVec rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
     % Plot the ori with longest backbone width.
     lbbWimg=imdilate(lbbImg,strel('disk',floor(rtMatrix(1,5))));
     bwP=bwperim(lbbWimg); % perimeter binary image.
@@ -289,11 +289,13 @@ if debugFlag
     set(gcf,'InvertHardCopy','off');
     print([handles.filenameWoExt '.res.png'],'-dpng',sprintf('-r%d',dpi));
 else
-    rtMatrix=getRtMatrix(skel,somabw,handles.branchThre,distImg);
+    [fVec rtMatrix]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
 end
 
 sprintf(num2str(rtMatrix(1)));
+sprintf(num2str(fVec(1)));
 save([handles.filenameWoExt '.rt.mat'],'rtMatrix');
+save([handles.filenameWoExt '.fv.mat'],'fVec');
 clear skel;
 clear somabw;
 
