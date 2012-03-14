@@ -1,9 +1,10 @@
-function filenames=getImgFileNames(filterSpec)
+function [filenames flFlag]=getImgFileNames(filterSpec)
 % filenames will always be a cell array.
 % filterSpec should be like {'*.png;*.PNG','Images';'*.*','All'}.
+% flFlag: filelist flag.
 
 if nargin==0
-	filterSpec={'*.png;*.PNG;*.jpg;*.jpeg;*.JPG;*.JPEG;*.tif;*.tiff;*.TIF;*.TIFF','Images';'*.*','All'};
+	filterSpec={'*.png;*.PNG;*.jpg;*.jpeg;*.JPG;*.JPEG;*.tif;*.tiff;*.TIF;*.TIFF','Images';'*.fl','filelist';'*.*','All'};
 end
 
 % Open path history.
@@ -19,13 +20,18 @@ if ~ischar(oldDir)
 	oldDir='./';
 end
 
-[filename,pathname] = uigetfile(filterSpec,'Select Images',oldDir,'multiselect','on');
+[filename,pathname,fIdx] = uigetfile(filterSpec,'Select Images',oldDir,'multiselect','on');
 
 if isequal(filename,0)
 % 	disp('User Pressed Cancel.');
 % 	filenames={0};
     filenames='';
 	return;
+end
+
+flFlag=0;
+if fIdx==2
+    flFlag=1;
 end
 
 if ~strcmpi(oldDir,pathname)

@@ -124,8 +124,10 @@ for i=1:obNum
     gVec(i)=artMats{i,2};
 end
 
-[coef score]=princomp(mat);
+% [coef score]=princomp(mat);
+[coef score]=princomp(zscore(mat)); % Re-scale variables.
 gNum=max(gVec);
+
 figure;
 % Plot first dataset.
 plot(score(gVec==1,1),score(gVec==1,2),'xr');
@@ -140,6 +142,8 @@ if gNum>=3
 end
 
 hold off;
+
+figure,biplot(coef(:,1:3),'scores',score(:,1:3));
 
 end
 

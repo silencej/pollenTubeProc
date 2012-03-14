@@ -200,11 +200,19 @@ bbId=rtMatrix(1,2); % The backbone branch id. bbIdx=1.
 fVec(3)=sum(rtMatrix(:,1)==bbId);
 fVec(4)=sum(rtMatrix(:,1)==0);
 sbIdx=find(rtMatrix(:,1)==bbId,1); % The second backbone row index.
-fVec(5)=rtMatrix(sbIdx,3);
-fVec(6)=rtMatrix(sbIdx,4);
+if isempty(sbIdx)
+    fVec(5:6)=[0 0];
+    fVec(9:10)=[0 0];
+else
+    fVec(5)=rtMatrix(sbIdx,3);
+    fVec(6)=rtMatrix(sbIdx,4);
+    fVec(9:10)=rtMatrix(sbIdx,5:6);
+end
 fVec(7:8)=rtMatrix(1,5:6);
-fVec(9:10)=rtMatrix(sbIdx,5:6);
 fVec(11)=size(bubbles,1);
-fVec(12)=max(bubbles(:,3));
-
+if ~fVec(11)
+    fVec(12)=0;
+else
+    fVec(12)=max(bubbles(:,3));
+end
 end
