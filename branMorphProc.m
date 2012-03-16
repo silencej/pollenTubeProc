@@ -119,6 +119,15 @@ for i=1:length(files)
 	procImg(files{i});
 end
 
+% If use filelist, then makeDfm directly for you.
+if flFlag
+    pathname=fileparts(files{1});
+    regCond=['(?<=' filesep ')[^' filesep ']*$'];
+    dirname=regexp(pathname,regCond,'match');
+    makeDfm(pathname,fullfile(pathname,dirname));
+end
+
+
 end
 
 %%%%%%%%%%%% Proc 1 image. %%%%%%%%%%%%%%%%
@@ -145,7 +154,7 @@ function procImg(imgFile)
 % SwollenTip: parralell, perpendicular.
 
 
-global ori handles debugFlag textOutput;
+global ori grayOri handles debugFlag textOutput;
 
 if textOutput
 tic;
@@ -244,7 +253,8 @@ end
 %     startPoints]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
 
 if debugFlag
-    [fVec rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
+    grayOri=getGrayImg(ori);
+    [fVec rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMatrix(skel,somabw,handles.branchThre,distImg,grayOri,bw);
     % Plot the ori with longest backbone width.
     lbbWimg=imdilate(lbbImg,strel('disk',floor(rtMatrix(1,5))));
     bwP=bwperim(lbbWimg); % perimeter binary image.

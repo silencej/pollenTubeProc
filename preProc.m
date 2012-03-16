@@ -230,12 +230,13 @@ fclose(fid);
 
 
 %% Obtain the soma/pollenGrain bw image.
+fprintf(1,'Now spcify soma/pollenGrain for %s.\n',handles.filenameWoExt);
 
 somafile='';
 if ~isempty(mc)
     somafile=mc.somafile;
 else
-    infoLine='Use the current image to get soma/grain?'; % If no, the user need to specify another image file for soma.
+    infoLine=sprintf('Use the current image %s to get soma/grain?',handles.filenameWoExt); % If no, the user need to specify another image file for soma.
     choice=questdlg(infoLine,'Use current image to find soma','Yes','No','Cancel','Yes');
     if strcmp(choice,'Cancel')
         fprintf(1,'User canceled.');

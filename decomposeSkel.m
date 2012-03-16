@@ -1,4 +1,4 @@
-function [subMatrix labelNum skelImg bubbles tips lbbImg lbbLen]=decomposeSkel(skelImg,startPoint,labelNum,branchThre,distImg,maxBblNum)
+function [subMatrix labelNum skelImg bubbles tips lbbImg lbbLen lbbSubs]=decomposeSkel(skelImg,startPoint,labelNum,branchThre,distImg,maxBblNum)
 % Decompose the parsi skel.
 % "labelNum", as input is the present used label number, and the new label should start at labelNum+1.
 % Then return the used largest "labelNum".
@@ -115,6 +115,7 @@ else
     if debugFlag
         lbbImg=bbImg;
         lbbLen=bbLen;
+        lbbSubs=brSubs;
         [branchInfo isSideBranch bubblesPart tipsPart]=traceBranch(brSubs, distImg, bbLen); % bbLen could be left over.
         if ~isSideBranch
             bblNum=size(bubblesPart,1);

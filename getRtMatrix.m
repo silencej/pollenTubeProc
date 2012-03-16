@@ -1,5 +1,7 @@
-function [fVec rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMatrix(skelImg,somabw,branchThre,distImg)
+function [fVec fnames rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMatrix(skelImg,somabw,branchThre,distImg,grayOri,bw)
 % Get the feature matix, the row is observation and col is variable.
+% fVec: feature vector.
+% fnames: feature names.
 
 if nargin<4
 %     widthFlag=0; % The default option is to process neurons, thus no width info.
@@ -60,6 +62,7 @@ if debugFlag
     newSkel=zeros(size(skelImg));
     lbbLen=0;
     lbbImg=[];
+    lbbSubs=[];
 end
 
 for i=1:num
@@ -75,10 +78,11 @@ for i=1:num
     clear qImg;
 
     if debugFlag
-        [subMatrix labelNum skelPart bubblesPart tipsPart lbbImg2 lbbLen2]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
+        [subMatrix labelNum skelPart bubblesPart tipsPart lbbImg2 lbbLen2 lbbSubs2]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
         if lbbLen2>lbbLen
             lbbImg=lbbImg2;
             lbbLen=lbbLen2;
+            lbbSubs=lbbSubs2;
         end
         if ~isempty(bubblesPart)
             bblNum=size(bubblesPart,1);
@@ -191,28 +195,68 @@ rtMatrix=rtMatrix(si,:);
 % bbChildNum: the number of child branches on the bb, not all.
 % sb: longest second level branch on the bb.
 % lbRad: largest bubble radius.
-% [psArea bbLen bbChildNum flBrNum sbPos sbLen bbWidth bbTipWidth sbWidth sbTipWidth bubbleNum lbRad].
-fVec=zeros(1,12); % It is a row vector.
+% widthRatio: bbTipWidth/bbWidth.
+% bbIntStd: backbone path intensity std.
+% avgIntRatio: mean(branches intensities)/mean(soma/grain intensities).
+fnames={'psArea', 'bbLen', 'bbChildNum', 'flBrNum', 'sbPos', ...
+    'sbLen','bbWidth', 'bbTipWidth', 'sbWidth', 'sbTipWidth', ...
+    'bubbleNum', 'lbRad','widthRatio','bbIntStd','avgIntRatio'};
+% psArea bbLen bbChildNum flBrNum sbPos sbLen bbWidth bbTipWidth sbWidth sbTipWidth bubbleNum lbRad].
 
-% psArea.
-fVec(1:2)=[sum(sum(somabw)) lbbLen];
+% fVec=zeros(1,length(fnames)); % It is a row vector.
+
+% Expand rtMatrix to 6 cols if ~widthFlag. Then it will be reverted before
+% it's returned.
+if ~widthFlag
+    tempRtMat=rtMatrix;
+    rtMatrix=[rtMatrix zeros(size(rtMatrix,1),2)];
+end
+
+psArea=sum(sum(somabw));
+bbLen=lbbLen;
 bbId=rtMatrix(1,2); % The backbone branch id. bbIdx=1.
-fVec(3)=sum(rtMatrix(:,1)==bbId);
-fVec(4)=sum(rtMatrix(:,1)==0);
+bbChildNum=sum(rtMatrix(:,1)==bbId);
+flBrNum=sum(rtMatrix(:,1)==0);
 sbIdx=find(rtMatrix(:,1)==bbId,1); % The second backbone row index.
 if isempty(sbIdx)
-    fVec(5:6)=[0 0];
-    fVec(9:10)=[0 0];
+    sbPos=0;
+    sbLen=0;
+    sbWidth=0;
+    sbTipWidth=0;
 else
-    fVec(5)=rtMatrix(sbIdx,3);
-    fVec(6)=rtMatrix(sbIdx,4);
-    fVec(9:10)=rtMatrix(sbIdx,5:6);
+    sbPos=rtMatrix(sbIdx,3);
+    sbLen=rtMatrix(sbIdx,4);
+    sbWidth=rtMatrix(sbIdx,5);
+    sbTipWidth=rtMatrix(sbIdx,6);
 end
-fVec(7:8)=rtMatrix(1,5:6);
-fVec(11)=size(bubbles,1);
-if ~fVec(11)
-    fVec(12)=0;
+bbWidth=rtMatrix(1,5);
+bbTipWidth=rtMatrix(1,6);
+bubbleNum=size(bubbles,1);
+if ~bubbleNum
+    lbRad=0;
 else
-    fVec(12)=max(bubbles(:,3));
+    lbRad=max(bubbles(:,3));
 end
+
+% fVec(13)=fVec(8)/fVec(7);
+widthRatio=bbTipWidth/bbWidth;
+bbIntStd=std(double(grayOri(lbbSubs)));
+somaIntAvg=sum(sum(uint8(somabw).*grayOri))/sum(sum(somabw)); % Soma/grain intensity average.
+nonSomabw=bw-bw&somabw;
+brIntAvg=sum(sum(uint8(nonSomabw).*grayOri))/sum(sum(nonSomabw)); % Other intensity average.
+avgIntRatio=brIntAvg/somaIntAvg;
+
+fVec=[psArea, bbLen, bbChildNum, flBrNum, sbPos, ...
+    sbLen, bWidth, bbTipWidth, sbWidth, sbTipWidth, ...
+    bubbleNum, lbRad, widthRatio, bbIntStd, avgIntRatio];
+
+% for i=1:length(fnames)
+%     eval(['fVec(i)=' fnames{i}]);
+% end
+
+% end.
+if ~widthFlag
+    rtMatrix=tempRtMat;
+end
+
 end
