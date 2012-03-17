@@ -11,6 +11,8 @@ clear global;
 fprintf(1,'PreProc is running...\n');
 global handles;
 
+handles.claheFlag=1;
+
 % "cutMargin" is used in:
 % 1. cutFrameFcn.
 % 2. Pad the bw image.
@@ -232,56 +234,44 @@ fclose(fid);
 %% Obtain the soma/pollenGrain bw image.
 fprintf(1,'Now spcify soma/pollenGrain for %s.\n',handles.filenameWoExt);
 
-somafile='';
-if ~isempty(mc)
-    somafile=mc.somafile;
-else
-    infoLine=sprintf('Use the current image %s to get soma/grain?',handles.filenameWoExt); % If no, the user need to specify another image file for soma.
-    choice=questdlg(infoLine,'Use current image to find soma','Yes','No','Cancel','Yes');
-    if strcmp(choice,'Cancel')
-        fprintf(1,'User canceled.');
-        return;
-    end
-    % if isempty(reply)
-    % 	reply='n';
-    % end
-    % reply=lower(reply);
-    % while ~strcmp(reply,'y') && ~strcmp(reply,'n')
-    % 	fprintf(1,'The input is not y or n! Please input again.\n');
-    % 	reply=input('Does the image have soma or grain image? (y/n [n]): ','s');
-    % 	if isempty(reply)
-    % 		reply='n';
-    % 	end
-    % 	reply=lower(reply);
-    % end
-    
-    % If there exists a good soma image, use it. If no good soma image, then
-    % use the original image and obtain the soma by increasing threshold to get
-    % the brightest region, which is usually where soma exists.
-    if strcmp(choice,'No')
-        files=getImgFileNames;
-        if files{1}==0
-            return;
-        end
-        while length(files)>1
-            fprintf(1,'Multiple soma files are input. Please choose only 1 file.\n');
-            files=getImgFileNames;
-            if files{1}==0
-                return;
-            end
-        end
-        somafile=files{1};
-    end
-end
+% somafile='';
+% if ~isempty(mc)
+%     somafile=mc.somafile;
+% else
+%     infoLine=sprintf('Use the current image %s to get soma/grain?',handles.filenameWoExt); % If no, the user need to specify another image file for soma.
+%     choice=questdlg(infoLine,'Use current image to find soma','Yes','No','Cancel','Yes');
+%     if strcmp(choice,'Cancel')
+%         fprintf(1,'User canceled.');
+%         return;
+%     end
+%     % if isempty(reply)
+%     % 	reply='n';
+%     % end
+%     % reply=lower(reply);
+%     % while ~strcmp(reply,'y') && ~strcmp(reply,'n')
+%     % 	fprintf(1,'The input is not y or n! Please input again.\n');
+%     % 	reply=input('Does the image have soma or grain image? (y/n [n]): ','s');
+%     % 	if isempty(reply)
+%     % 		reply='n';
+%     % 	end
+%     % 	reply=lower(reply);
+%     % end
+%     
+%     % If there exists a good soma image, use it. If no good soma image, then
+%     % use the original image and obtain the soma by increasing threshold to get
+%     % the brightest region, which is usually where soma exists.
+%     if strcmp(choice,'No')
+%     end
+% end
 
-if ~isempty(somafile)
-	% ori and grayOri are now the cutFrame soma images, the same size with the cut image.
-	ori=imread(somafile);
-    luCorner=handles.luCorner;
-    rlCorner=handles.rlCorner;
-	ori=ori(luCorner(1):rlCorner(1),luCorner(2):rlCorner(2),:);
-	grayOri=getGrayImg(ori);
-end
+% if ~isempty(somafile)
+% 	% ori and grayOri are now the cutFrame soma images, the same size with the cut image.
+% 	ori=imread(somafile);
+%     luCorner=handles.luCorner;
+%     rlCorner=handles.rlCorner;
+% 	ori=ori(luCorner(1):rlCorner(1),luCorner(2):rlCorner(2),:);
+% 	grayOri=getGrayImg(ori);
+% end
 
 somaBwFile=[handles.filenameWoExt '.somabw.png'];
 handles.useOldSoma=0;
@@ -289,8 +279,12 @@ if exist(somaBwFile,'file')
     bw=imread(somaBwFile);
     handles.useOldSoma=1;
     if size(bw,1)~=size(grayOri,1) || size(bw,2)~=size(grayOri,2)
-        bw=[];
-        handles.useOldSoma=0;
+        if isempty(mc)
+            bw=[];
+            handles.useOldSoma=0;
+        else
+            bw=bw(mc.luCorner(1):mc.rlCorner(1),mc.luCorner(2):mc.rlCorner(2),:);
+        end
     end
 end
 
@@ -386,15 +380,28 @@ if handles.hasAnnoFile && exist(cutOriFile,'file')
     end
     if strcmp(choice,'Yes')
         ori=imread(cutOriFile);
-        grayOri=getGrayImg(ori);
+        if handles.claheFlag
+            [grayOri rgbChan]=getGrayImg(ori); % rgbChan: rgb channel.
+            grayOri=adapthisteq(grayOri); % CLAHE.
+            ori(:,:,rgbChan)=grayOri;
+        else
+            grayOri=getGrayImg(ori);
+        end
         handles.useOldCrop=1;
         return;
     end
 end
 
 ori=imread(handles.filename);
-% Get grayOri.
-grayOri=getGrayImg(ori);
+
+if handles.claheFlag
+    [grayOri rgbChan]=getGrayImg(ori);
+    grayOri=adapthisteq(grayOri); % CLAHE.
+    ori(:,:,rgbChan)=grayOri;
+else
+    % Get grayOri.
+    grayOri=getGrayImg(ori);
+end
 
 % Thresholding and Cutting.
 if isempty(handles.cutFrameThre)
