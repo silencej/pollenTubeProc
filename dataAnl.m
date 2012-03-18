@@ -20,13 +20,16 @@ gVec=inf(50,1); % group id vector.
 obs=cell(1,1); % observation file names.
 gNum=length(files);
 gnames=cell(gNum,1); % group names.
-load(files{1},'dfm','obfile','-mat');
+load(files{1},'dfm','obfile','fnames','-mat');
 varNum=size(dfm,2);
 dfms=inf(50,varNum);
 dfmNum=size(dfm,1);
 dfms(1:dfmNum,:)=dfm;
 gVec(1:dfmNum)=1;
 obs(1:dfmNum)=obfile;
+[pathname filename extname]=fileparts(files{i});
+sprintf([pathname extname]);
+gnames(1)={filename};
 dfmsPt=dfmNum;
 for i=2:length(files)
     load(files{i},'dfm','obfile','-mat');
@@ -78,7 +81,7 @@ sprintf(num2str(coef(1)));
 % % varNum=size(dfms,2);
 % % for i=1:varNum
 % %     plot([0 coef(i,1)],[0 coef(i,2)],'-b');
-% %     text(coef(i,1)+1,coef(i,2),varNames{i});
+% %     text(coef(i,1)+1,coef(i,2),fnames{i});
 % % end
 % axis tight;
 % grid on;
@@ -87,9 +90,9 @@ sprintf(num2str(coef(1)));
 figure;
 title('biplot of PCA');
 % 
-% varNames={'psArea', 'bbLen', 'bbChildNum', 'flBrNum', 'sbPos', 'sbLen', 'bbWidth', 'bbTipWidth', 'sbWidth', 'sbTipWidth', 'bubbleNum', 'lbRad'};
+% fnames={'psArea', 'bbLen', 'bbChildNum', 'flBrNum', 'sbPos', 'sbLen', 'bbWidth', 'bbTipWidth', 'sbWidth', 'sbTipWidth', 'bubbleNum', 'lbRad'};
 % biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',num2str((1:12)'),'obslabels',obs);
-biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',varNames,'obslabels',obs);
+biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',fnames,'obslabels',obs);
 
 % obsNum=size(dfms,1);
 % obsHandle=h(varNum*2+1:varNum*2+obsNum);
@@ -102,10 +105,10 @@ axis tight;
 % sprintf(num2str(coef(1)));
 % figure;
 % title('biplot of PCA, without bubbles');
-% % varNames={'bbLen', 'bbChildNum', 'flBrNum', 'sbPos', 'sbLen','bbWidth', 'bbTipWidth', 'sbWidth', 'sbTipWidth'};
-% varNames={'bbLen','bbWidth', 'bbTipWidth'};
+% % fnames={'bbLen', 'bbChildNum', 'flBrNum', 'sbPos', 'sbLen','bbWidth', 'bbTipWidth', 'sbWidth', 'sbTipWidth'};
+% fnames={'bbLen','bbWidth', 'bbTipWidth'};
 % % biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',num2str((1:12)'),'obslabels',obs);
-% biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',varNames,'obslabels',obs);
+% biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',fnames,'obslabels',obs);
 
 %% 3d plot.
 

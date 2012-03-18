@@ -123,10 +123,14 @@ end
 if flFlag
     pathname=fileparts(files{1});
     regCond=['(?<=' filesep ')[^' filesep ']*$'];
-    dirname=regexp(pathname,regCond,'match');
-    makeDfm(pathname,fullfile(pathname,dirname));
+    dirname=regexp(pathname,regCond,'match'); % dirname is a cell string.
+    makeDfm(pathname,fullfile(pathname,dirname{1}));
 end
 
+close all;
+if length(files)>1
+    helpdlg('branMorphProc finished.','Finish');
+end
 
 end
 
@@ -155,6 +159,14 @@ function procImg(imgFile)
 
 
 global ori grayOri handles debugFlag textOutput;
+
+% sprintf(num2str(debugFlag));
+
+% Output the current filename.
+sepNum=20;
+seps=repmat('=',1,sepNum);
+seps=[seps '\n'];
+fprintf(1,[seps 'Processing %s:\n'],imgFile);
 
 if textOutput
 tic;
@@ -252,80 +264,89 @@ end
 %     [rtMatrix
 %     startPoints]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
 
+%% Plot result.
+
+% if debugFlag
+grayOri=getGrayImg(ori);
+[fVec fnames rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMatrix(skel,somabw,handles.branchThre,distImg,grayOri,bw);
+sprintf([num2str(fVec(1)) fnames{1}]);
+% Plot the ori with longest backbone width.
+lbbWimg=imdilate(lbbImg,strel('disk',floor(rtMatrix(1,5))));
+bwP=bwperim(lbbWimg); % perimeter binary image.
+ori1=ori(:,:,1); % ori 1 layer for temp use.
+ori1(bwP)=255;
+ori(:,:,1)=ori1;
+ori1=ori(:,:,2); % ori 1 layer for temp use.
+ori1(bwP)=255;
+ori(:,:,2)=ori1;
+ori1=ori(:,:,3); % ori 1 layer for temp use.
+ori1(bwP)=255;
+ori(:,:,3)=ori1;
+
+close all; % Now only keep one figure open.
 if debugFlag
-    grayOri=getGrayImg(ori);
-    [fVec rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMatrix(skel,somabw,handles.branchThre,distImg,grayOri,bw);
-    % Plot the ori with longest backbone width.
-    lbbWimg=imdilate(lbbImg,strel('disk',floor(rtMatrix(1,5))));
-    bwP=bwperim(lbbWimg); % perimeter binary image.
-    ori1=ori(:,:,1); % ori 1 layer for temp use.
-    ori1(bwP)=255;
-    ori(:,:,1)=ori1;
-    ori1=ori(:,:,2); % ori 1 layer for temp use.
-    ori1(bwP)=255;
-    ori(:,:,2)=ori1;
-    ori1=ori(:,:,3); % ori 1 layer for temp use.
-    ori1(bwP)=255;
-    ori(:,:,3)=ori1;
-    
-    figure, imshow(ori,'Border','tight');
-    hold on;
-    
-    % Plot skels.
-    [row col]=find(skel);
-    plot(col,row,'.w','Markersize',2);
-    [row col]=find(newSkel);
-    plot(col,row,'.w'); % MarkerSize=5.
-
-    % Plot soma/pollen grain.
-    somaPerim=bwperim(somabw,8);
-    [row col]=find(somaPerim);
-    plot(col,row,'.b');
-    for i=1:size(startPoints,1)
-        plot(startPoints(i,2),startPoints(i,1),'*r');
-    end
-        
-    % If widthFlag is off, bubbles and tips will be empty.
-    for j=1:size(bubbles,1)
-        radius=bubbles(j,3);
-        row=bubbles(j,1)-radius;
-        col=bubbles(j,2)-radius;
-        rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
-        plot(col+radius,row+radius,'.c','MarkerSize',15); % plot center.
-    end
-    for j=1:size(tips,1)
-        radius=tips(j,3);
-        row=tips(j,1)-radius;
-        col=tips(j,2)-radius;
-        rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','m');
-        plot(col+radius,row+radius,'.m','MarkerSize',15); % plot center.
-    end
-    
-    hold off;
-
-    % Save result image.
-%     [H,W] = size(ori);
-    dpi = 300;
-%     set(gcf, 'paperposition', [0 0 W/dpi H/dpi]);
-%     set(gcf, 'papersize', [W/dpi H/dpi]);
-    set(gcf,'InvertHardCopy','off');
-    print([handles.filenameWoExt '.res.png'],'-dpng',sprintf('-r%d',dpi));
+    figure('Visible','off');
 else
-    [fVec rtMatrix]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
+    figure('Visible','on');
+end
+imshow(ori,'Border','tight');
+hold on;
+
+% Plot skels.
+[row col]=find(skel);
+plot(col,row,'.w','Markersize',2);
+[row col]=find(newSkel);
+plot(col,row,'.w'); % MarkerSize=5.
+
+% Plot soma/pollen grain.
+somaPerim=bwperim(somabw,8);
+[row col]=find(somaPerim);
+plot(col,row,'.b');
+for i=1:size(startPoints,1)
+    plot(startPoints(i,2),startPoints(i,1),'*r');
 end
 
+% If widthFlag is off, bubbles and tips will be empty.
+for j=1:size(bubbles,1)
+    radius=bubbles(j,3);
+    row=bubbles(j,1)-radius;
+    col=bubbles(j,2)-radius;
+    rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
+    plot(col+radius,row+radius,'.c','MarkerSize',15); % plot center.
+end
+for j=1:size(tips,1)
+    radius=tips(j,3);
+    row=tips(j,1)-radius;
+    col=tips(j,2)-radius;
+    rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','m');
+    plot(col+radius,row+radius,'.m','MarkerSize',15); % plot center.
+end
+
+hold off;
+
+% Save result image.
+%     [H,W] = size(ori);
+dpi = 300;
+%     set(gcf, 'paperposition', [0 0 W/dpi H/dpi]);
+%     set(gcf, 'papersize', [W/dpi H/dpi]);
+set(gcf,'InvertHardCopy','off');
+print([handles.filenameWoExt '.res.png'],'-dpng',sprintf('-r%d',dpi));
+
+%     [fVec fnames rtMatrix]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
+
+%% Save rt.mat and fv.mat.
+
+sprintf(fnames{1});
 sprintf(num2str(rtMatrix(1)));
 sprintf(num2str(fVec(1)));
 save([handles.filenameWoExt '.rt.mat'],'rtMatrix');
-save([handles.filenameWoExt '.fv.mat'],'fVec');
+save([handles.filenameWoExt '.fv.mat'],'fVec','fnames');
 clear skel;
 clear somabw;
 
+%% Text output.
+
 if textOutput
-    sepNum=20;
-    seps=repmat('=',1,sepNum);
-    seps=[seps '\n'];
-    fprintf(1,[seps 'The result of %s:\n'],handles.filename);
     fprintf(1,'The length of major backbone = %g pixels.\n',rtMatrix(1,4));
     fprintf(1,'The tip width of major backbone = %g pixels.\n',rtMatrix(1,6));
     toc;

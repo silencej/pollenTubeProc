@@ -240,14 +240,15 @@ end
 
 % fVec(13)=fVec(8)/fVec(7);
 widthRatio=bbTipWidth/bbWidth;
-bbIntStd=std(double(grayOri(lbbSubs)));
+bbInt=double(grayOri(lbbSubs));
+bbIntStd=std(bbInt(:));
 somaIntAvg=sum(sum(uint8(somabw).*grayOri))/sum(sum(somabw)); % Soma/grain intensity average.
-nonSomabw=bw-bw&somabw;
+nonSomabw=bw-(bw&somabw);
 brIntAvg=sum(sum(uint8(nonSomabw).*grayOri))/sum(sum(nonSomabw)); % Other intensity average.
 avgIntRatio=brIntAvg/somaIntAvg;
 
 fVec=[psArea, bbLen, bbChildNum, flBrNum, sbPos, ...
-    sbLen, bWidth, bbTipWidth, sbWidth, sbTipWidth, ...
+    sbLen, bbWidth, bbTipWidth, sbWidth, sbTipWidth, ...
     bubbleNum, lbRad, widthRatio, bbIntStd, avgIntRatio];
 
 % for i=1:length(fnames)

@@ -9,9 +9,10 @@ if nargin<2
     dirname='';
 end
 
+oldDir='./';
+
 if isempty(dirname)
     % Open path history.
-    oldDir='./';
     if exist('path.hist','file')
         fid=fopen('path.hist','rt');
         oldDir=fgetl(fid);

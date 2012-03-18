@@ -49,6 +49,7 @@ if isempty(A)
     tips=[];
     lbbImg=[];
     lbbLen=0;
+    lbbSubs=[];
     return;
 end
 
