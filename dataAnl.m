@@ -27,7 +27,7 @@ dfmNum=size(dfm,1);
 dfms(1:dfmNum,:)=dfm;
 gVec(1:dfmNum)=1;
 obs(1:dfmNum)=obfile;
-[pathname filename extname]=fileparts(files{i});
+[pathname filename extname]=fileparts(files{1});
 sprintf([pathname extname]);
 gnames(1)={filename};
 dfmsPt=dfmNum;
@@ -47,6 +47,15 @@ gVec=gVec(gVec~=inf);
 dfms=dfms(1:length(gVec),:);
 
 % gNum=max(gVec);
+
+%% Murphy features.
+
+
+
+%% Feature Selestion.
+
+% su=symUncer();
+
 
 %% Robust PCA.
 

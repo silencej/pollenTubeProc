@@ -45,8 +45,13 @@ if isempty(dfmname)
     dfmname=fullfile(pathname,file);
     save(dfmname,'dfm','obfile','fnames');
 else
-    save([dfmname '.dfm'],'dfm','obfile','fnames');
+    dfmname=[dfmname '.dfm'];
+    save(dfmname,'dfm','obfile','fnames');
 end
+
+pathname=fileparts(dfmname);
+sprintf(pathname);
+copyfile(dfmname,[pathname filesep '..']); % copy the filename to parent directory.
 
 fprintf(1,'DFM of %s is generated.\n',dirname);
 
