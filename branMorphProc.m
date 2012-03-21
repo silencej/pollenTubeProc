@@ -24,7 +24,11 @@ fprintf(1,'branMorphProc is running...\n');
 
 global handles debugFlag textOutput;
 
-debugFlag=1;
+% Set a defaultScale here.
+defaultScale=20;
+handles.defaultScale=defaultScale;
+
+debugFlag=0;
 % The text output may be needed by users.
 textOutput=1;
 
@@ -84,10 +88,51 @@ iptsetpref('ImshowBorder','tight'); % Make imshow display no border and thus pri
 warning off signal:findpeaks:noPeaks;
 
 pathstr=fileparts(files{1});
-% Set whether the width and bubbles should be calculated.
-widthFlagFile=fullfile(pathstr,'widthFlag');
-if ~exist(widthFlagFile,'file')
-    infoLine='There is no widthFlag file in current directory. If the branch width is useful for the images here, choose useWidth, otherwise noUseWidth.';
+
+noWidthFlag=0;
+noScale=0;
+noRadius=0;
+flagChanged=0;
+dirFlagFile=fullfile(pathstr,'dirFlag'); % directory flags.
+if ~exist(dirFlagFile,'file')
+    noWidthFlag=1;
+    noScale=1;
+    noRadius=1;
+    flagChanged=1;
+else
+    flags=nan(3,1);
+    fid=fopen(dirFlagFile,'w');
+    tline=fgetl(fid);
+    pt=0;
+    while ischar(tline) && ~isempty(tline)
+        pt=pt+1;
+        flags(pt,1)=str2double(tline);
+    end
+    fclose(fid);
+    if pt<1
+        noWidthFlag=1;
+    else
+        handles.widthFlag=(flags(1)~=0);
+        fprintf(1,'The width flag = %g.\n',handles.widthFlag);
+    end
+    if pt<2
+        noScale=1;
+    else
+        handles.scale=flags(2);
+        fprintf(1,'Scale = %g X.\n',handles.scale);
+    end
+    if pt<3
+        noRadius=1;
+        flagChanged=1;
+    else
+        handles.radius=flags(3);
+        fprintf(1,'Cell Radius = %g micrometer.\n',handles.radius);
+    end
+end
+
+if noWidthFlag
+    % widthFlag. Set whether the width and bubbles should be calculated.
+    infoLine='There is no widthFlag setting in current directory. If the branch width is useful for the images here, choose useWidth, otherwise noUseWidth.';
     choice=questdlg(infoLine,'Generate widthFlag file','useWidth','notUseWidth','Cancel','notUseWidth');
     if strcmp(choice,'useWidth')
         handles.widthFlag=1;
@@ -97,12 +142,28 @@ if ~exist(widthFlagFile,'file')
         fprintf('User canceled.');
         return;
     end
-    fid=fopen(widthFlagFile,'w');
+end
+
+if noScale
+    % scale.
+    promptLine=sprintf('Choose a scale value (default %g X object len,).',defaultScale); %  0.1065 um/pixel
+    choice=inputdlg(promptLine,'Scale',1,{num2str(defaultScale)});
+    handles.scale=str2double(choice{1});
+end
+
+if noRadius
+    % radius.
+    promptLine='Choose a radius value in micrometer (default 15 for tobaco pollen).';
+    choice=inputdlg(promptLine,'Scale',1,{'15'});
+    handles.radius=str2double(choice{1});
+end
+
+% Save flags for the dir.
+if flagChanged
+    fid=fopen(dirFlagFile,'w');
     fprintf(fid,'%g\n',handles.widthFlag~=0);
-    fclose(fid);
-else
-    fid=fopen(widthFlagFile,'r');
-    handles.widthFlag=fscanf(fid,'%d',1);
+    fprintf(fid,'%g\n',handles.scale);
+    fprintf(fid,'%g\n',handles.radius);
     fclose(fid);
 end
 
@@ -182,7 +243,7 @@ cutOriFile=[handles.filenameWoExt '.cut.png'];
 bwFile=[handles.filenameWoExt '.bw.png'];
 somabwFile=[handles.filenameWoExt '.somabw.png'];
 if ~exist(cutOriFile,'file')
-	fprintf(1,'%s must exist to proceed %s\n.',cutOriFile,handles.filename);
+	fprintf(1,'ERROR: %s must exist to proceed %s\n.',cutOriFile,handles.filename);
 	fprintf(1,'Use preProc.m to generate it.\n');
 	return;
 end
@@ -192,12 +253,12 @@ end
 %		return;
 %	end
 if ~exist(bwFile,'file')
-	fprintf(1,'%s must exist to proceed %s\n.',bwFile,handles.filename);
+	fprintf(1,'ERROR: %s must exist to proceed %s\n.',bwFile,handles.filename);
 	fprintf(1,'Use preProc.m to generate it.\n');
 	return;
 end
 if ~exist(somabwFile,'file')
-	fprintf(1,'%s must exist to proceed %s\n.',somabwFile,handles.filename);
+	fprintf(1,'ERROR: %s must exist to proceed %s\n.',somabwFile,handles.filename);
 	fprintf(1,'Use preProc.m to generate it.\n');
 	return;
 end
@@ -285,9 +346,9 @@ ori(:,:,3)=ori1;
 
 close all; % Now only keep one figure open.
 if debugFlag
-    figure('Visible','off');
-else
     figure('Visible','on');
+else
+    figure('Visible','off');
 end
 imshow(ori,'Border','tight');
 hold on;
@@ -340,6 +401,7 @@ sprintf(fnames{1});
 sprintf(num2str(rtMatrix(1)));
 sprintf(num2str(fVec(1)));
 save([handles.filenameWoExt '.rt.mat'],'rtMatrix');
+% Note: the fVec has been scaled to the deafultScale.
 save([handles.filenameWoExt '.fv.mat'],'fVec','fnames');
 clear skel;
 clear somabw;

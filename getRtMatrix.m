@@ -3,6 +3,8 @@ function [fVec fnames rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMat
 % fVec: feature vector.
 % fnames: feature names.
 
+global handles;
+
 if nargin<4
 %     widthFlag=0; % The default option is to process neurons, thus no width info.
     distImg=[];
@@ -250,6 +252,15 @@ avgIntRatio=brIntAvg/somaIntAvg;
 fVec=[psArea, bbLen, bbChildNum, flBrNum, sbPos, ...
     sbLen, bbWidth, bbTipWidth, sbWidth, sbTipWidth, ...
     bubbleNum, lbRad, widthRatio, bbIntStd, avgIntRatio];
+
+% Re-scale if the scale is not 40.
+if floor(handles.scale)~=handles.defaultScale
+    sf=handles.defaultScale/handles.scale;
+    fVec(1)=fVec(1)*(sf^2); % area is sf^2 scaled.
+    fVec(2)=fVec(2)*sf;
+    fVec(6:10)=fVec(6:10).*sf;
+    fVec(12)=fVec(12)*sf;
+end
 
 % for i=1:length(fnames)
 %     eval(['fVec(i)=' fnames{i}]);
