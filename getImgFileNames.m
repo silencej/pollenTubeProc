@@ -29,9 +29,25 @@ if isequal(filename,0)
 	return;
 end
 
+% If input a filelist, then read the filelist file and return all filenames
+% in it.
 flFlag=0;
 if fIdx==2
     flFlag=1;
+    if iscell(filename)
+        error('getImgFileNames: only one filelist could be input each time.');
+    end
+    filenames=getFilelist(fullfile(pathname,filename));
+    return;
+%     tempFiles=files;
+%     filesPt=0;
+%     files=cell(1,1);
+%     for i=1:length(tempFiles)
+%         fls=getFilelist(tempFiles{i}); % files.
+%         flsNum=length(fls);
+%         files(filesPt+1:filesPt+flsNum)=fls;
+%         filesPt=filesPt+flsNum;
+%     end
 end
 
 if ~strcmpi(oldDir,pathname)

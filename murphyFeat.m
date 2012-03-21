@@ -12,21 +12,9 @@ radius=15;
 addpath('slicFeat/matlab');
 % addpath(genpath('SLIC'));
 
-[files flFlag]=getImgFileNames;
+files=getImgFileNames;
 if isempty(files)
 	return;
-end
-
-if flFlag
-    tempFiles=files;
-    filesPt=0;
-    files=cell(1,1);
-    for i=1:length(tempFiles)
-        fls=getFilelist(tempFiles{i}); % files.
-        flsNum=length(fls);
-        files(filesPt+1:filesPt+flsNum)=fls;
-        filesPt=filesPt+flsNum;
-    end
 end
 
 len=length(files);

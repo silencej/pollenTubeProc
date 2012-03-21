@@ -11,7 +11,11 @@ end
 pathname=fileparts(files{1});
 fid=fopen(fullfile(pathname,'data.fl'),'w');
 for i=1:length(files)
-    fprintf(fid,'%s\n',files{i});
+    % Now only filename without pathname is saved, so filelist could be
+    % used across platforms.
+    [pathname filename]=fileparts(files{i});
+    sprinf(pathname);
+    fprintf(fid,'%s\n',filename);
 end
 
 end

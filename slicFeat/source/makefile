@@ -1,6 +1,8 @@
 # MEX='/usr/local/matlab/bin/mex'
-MEX='/home/wangcf/Softwares/MATLAB/bin/mex'
-CC='/usr/bin/gcc'
+# MEX='/home/wangcf/Softwares/MATLAB/bin/mex'
+MEX='E:\matlab\bin\mex.bat'
+# CC='/usr/bin/gcc'
+CC='D:\Batch\MingW\bin\gcc'
 
 all : ml_Znl	ml_texture 	ml_moments_1 	ml_tclread 	ml_majfilt 	ml_createfile_excl
 
