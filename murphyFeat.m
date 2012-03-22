@@ -12,7 +12,7 @@ radius=15;
 addpath('slicFeat/matlab');
 % addpath(genpath('SLIC'));
 
-files=getImgFileNames;
+[files flFlag]=getImgFileNames;
 if isempty(files)
 	return;
 end
@@ -53,9 +53,9 @@ if flFlag
 end
 
 close all;
-if length(files)>1
-    helpdlg('branMorphProc finished.','Finish');
-end
+% if length(files)>1
+helpdlg('murphyFeat finished.','Finish');
+% end
 
 end
 

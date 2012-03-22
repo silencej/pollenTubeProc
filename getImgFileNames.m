@@ -38,7 +38,7 @@ if fIdx==2
         error('getImgFileNames: only one filelist could be input each time.');
     end
     filenames=getFilelist(fullfile(pathname,filename));
-    return;
+%     return;
 %     tempFiles=files;
 %     filesPt=0;
 %     files=cell(1,1);
@@ -48,15 +48,7 @@ if fIdx==2
 %         files(filesPt+1:filesPt+flsNum)=fls;
 %         filesPt=filesPt+flsNum;
 %     end
-end
-
-if ~strcmpi(oldDir,pathname)
-	fid=fopen('path.hist','wt');
-	fprintf(fid,'%s',pathname);
-	fclose(fid);
-end
-
-if ~iscell(filename)
+elseif ~iscell(filename)
 	filenames=fullfile(pathname,filename);
 	filenames={filenames};
 else
@@ -65,6 +57,13 @@ else
 	for i=1:l
 		filenames(i)={[pathname filename{i}]};
 	end
+end
+
+% Write path history.
+if ~strcmpi(oldDir,pathname)
+	fid=fopen('path.hist','wt');
+	fprintf(fid,'%s',pathname);
+	fclose(fid);
 end
 
 end

@@ -58,8 +58,8 @@ end
 % rough, it also causes the overestimate of the circle's radius.
 % gamma=1; % Used for image enhancement. Gamma transform with r<1 expands the low intensity levels in output. The lower gamma, the more washed-out of the image.
 
-% [files flFlag]=getImgFileNames;
-files=getImgFileNames;
+[files flFlag]=getImgFileNames;
+% files=getImgFileNames;
 if isempty(files)
 	return;
 end
