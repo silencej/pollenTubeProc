@@ -167,7 +167,7 @@ if ~isempty(varlabs)
     if in3D
         varTxtHndl = text(coefs(:,1)+delx,coefs(:,2)+dely,coefs(:,3)+delz,varlabs);
     else
-        varTxtHndl = text(coefs(:,1)+delx,coefs(:,2)+dely,varlabs);
+        varTxtHndl = text(coefs(:,1)+delx,coefs(:,2)+dely,varlabs,'Interpreter','none');
     end
     set(varTxtHndl,'tag','varlabel');
 end

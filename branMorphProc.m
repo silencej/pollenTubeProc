@@ -1,4 +1,4 @@
-function branMorphProc
+function branMorphProc(debugF)
 % branMorphProc.
 % Run it as 'branMorphProc', then a dialogue comes out asking for image file(s);
 %
@@ -28,7 +28,11 @@ global handles debugFlag textOutput;
 defaultScale=20;
 handles.defaultScale=defaultScale;
 
-debugFlag=0;
+if nargin==0
+	debugFlag=0;
+else
+	debugFlag=debugF;
+end
 % The text output may be needed by users.
 textOutput=1;
 
@@ -102,12 +106,13 @@ if ~exist(dirFlagFile,'file')
     flagChanged=1;
 else
     flags=nan(3,1);
-    fid=fopen(dirFlagFile,'w');
+    fid=fopen(dirFlagFile,'r');
     tline=fgetl(fid);
     pt=0;
     while ischar(tline) && ~isempty(tline)
         pt=pt+1;
         flags(pt,1)=str2double(tline);
+        tline=fgetl(fid);
     end
     fclose(fid);
     if pt<1
@@ -189,10 +194,11 @@ if flFlag
     makeDfm(pathname,fullfile(pathname,dirname{1}));
 end
 
-close all;
 if length(files)>1
-    helpdlg('branMorphProc finished.','Finish');
+	close all;
 end
+
+helpdlg('branMorphProc finished.','Finish');
 
 end
 

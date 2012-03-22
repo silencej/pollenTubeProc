@@ -18,9 +18,9 @@ for i=1:length(fls)
     tline=fgetl(fid);
     while ischar(tline)
         filesPt=filesPt+1;
-        [pn fn]=fileparts(tline);
+        [pn fn extname]=fileparts(tline);
         sprintf(pn);
-        files(filesPt)={fullfile(dirname,fn)};
+        files(filesPt)={fullfile(dirname,[fn extname])};
         tline=fgetl(fid);
     end
     % If there is no char line in filelist.

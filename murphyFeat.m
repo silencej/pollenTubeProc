@@ -2,9 +2,9 @@ function murphyFeat
 
 fprintf(1,'murphyFeat runs...\n');
 
-scale=0.2131; % um/pixel.
+% scale=0.2131; % um/pixel.
 % Tobaco
-radius=15;
+% radius=15;
 % Tomato
 % radius=;
 
@@ -16,40 +16,69 @@ addpath('slicFeat/matlab');
 if isempty(files)
 	return;
 end
+if ~flFlag
+	error('Must specify a filelist!');
+end
+
+% Read dirFlag.
+pathstr=fileparts(files{1});
+dirFlagFile=fullfile(pathstr,'dirFlag'); % directory flags.
+fid=fopen(dirFlagFile,'r');
+tline=fgetl(fid);
+pt=0;
+flags=inf(3,1);
+while ischar(tline) && ~isempty(tline)
+	pt=pt+1;
+	flags(pt,1)=str2double(tline);
+    tline=fgetl(fid);
+end
+fclose(fid);
+if pt<3
+	error('dirFlag is corrupted!');
+end
+scaleX=flags(2);
+if floor(scaleX)==20
+    scale=0.2131;
+elseif floor(scaleX)==40
+    scale=0.1065;
+end
+fprintf(1,'Scale = %g X, or %g um per pixel.\n',scaleX,scale);
+radius=flags(3);
+fprintf(1,'Cell Radius = %g micrometer.\n',radius);
 
 len=length(files);
 for i=1:len
-    fprintf(1,'Proc image: %s.\n',files{i});
+	fprintf(1,'Proc image: %s.\n',files{i});
 % 	[bwFVec somaFVec branchFVec fnames]=procImg(files{i});
-    [fVec fnames]=procImg(files{i},scale,radius);
-    if i==1
-        varNum=length(fVec);
-%         varNum=8;
-        dfm=zeros(len,varNum);
-%         somaFMat=zeros(len,varNum);
-%         branchFMat=zeros(len,varNum);
-        obfile=cell(len,1);
-    end
-%     bwFMat(i,:)=bwFVec;
-%     somaFMat(i,:)=somaFVec;
-%     branchFMat(i,:)=branchFVec;
-    dfm(i,:)=fVec;
-    [pathname filename]=fileparts(files{i});
-    sprintf(pathname);
-    obfile(i)={filename};
+	[fVec fnames]=procImg(files{i},scale,radius);
+	if i==1
+		varNum=length(fVec);
+%		 varNum=8;
+		dfm=zeros(len,varNum);
+%		 somaFMat=zeros(len,varNum);
+%		 branchFMat=zeros(len,varNum);
+		obfile=cell(len,1);
+	end
+%	 bwFMat(i,:)=bwFVec;
+%	 somaFMat(i,:)=somaFVec;
+%	 branchFMat(i,:)=branchFVec;
+	dfm(i,:)=fVec;
+	[pathname filename]=fileparts(files{i});
+	sprintf(pathname);
+	obfile(i)={filename};
 end
 sprintf(fnames{1});
 
 % If use filelist, then makeDfm directly for you.
 if flFlag
-    pathname=fileparts(files{1});
-    regCond=['(?<=' filesep ')[^' filesep ']*$'];
-    dirname=regexp(pathname,regCond,'match'); % dirname is a cell string.
-%     makeDfm(pathname,fullfile(pathname,dirname{1}));
-    murphDfmName=fullfile(pathname,[dirname{1} '.murph.dfm']);
+	pathname=fileparts(files{1});
+	regCond=['(?<=' filesep ')[^' filesep ']*$'];
+	dirname=regexp(pathname,regCond,'match'); % dirname is a cell string.
+%	 makeDfm(pathname,fullfile(pathname,dirname{1}));
+	murphDfmName=fullfile(pathname,[dirname{1} '.murph.dfm']);
 %   save(murphDfmName,'bwFMat','somaFMat','branchFMat','obfile','fnames');
-    save(murphDfmName,'dfm','obfile','fnames');
-    copyfile(murphDfmName,[pathname filesep '..']); % copy the filename to parent directory.
+	save(murphDfmName,'dfm','obfile','fnames');
+	copyfile(murphDfmName,[pathname filesep '..']); % copy the filename to parent directory.
 end
 
 close all;
@@ -96,12 +125,13 @@ nonobjimg=grayOri.*uint8(~bw);
 % skl - skeleton features (5 features)
 % nof - non-object fluorescence feature(s) (currently 1 feature)
 featsets={'img','hul','edg','mor','zer','har','wav','skl','nof'};
+% featsets={'hul','edg','zer','har','wav','skl','nof'};
 [feat_names, feat_vals, feat_slf] = ...
-    ml_features(imageProc, [], bw, featsets, scale, radius, ...
+	ml_features(imageProc, [], bw, featsets, scale, radius, ...
 		nonobjimg, har_pixsize, har_intbins);
 
-    
-    
+	
+
 % [names, values] = mb_imgfeatures(imageProc, []);
 % hull = mb_imgconvhull(bw);
 % [names1, values1] = mb_hullfeatures(imageproc, hull);

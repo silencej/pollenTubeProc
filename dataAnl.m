@@ -192,40 +192,40 @@ axis tight;
 
 % T=clusterdata(dfms,'maxclust',4,'distance','correlation','linkage','ward');
 
-dfms=zscore(dfms);
-z=linkage(pdist(dfms),'ward');
-figure;
-gVecStr=num2str(gVec);
-dendrogram(z,0,'labels',gVecStr);
-% T=clusterdata(dfms,'maxclust',4,'linkage','ward');
-T=cluster(z,'maxclust',4);
-
-% T=clusterdata(dfms,'maxclust',4,'linkage','ward');
+% dfms=zscore(dfms);
+% z=linkage(pdist(dfms),'ward');
+% figure;
+% gVecStr=num2str(gVec);
+% dendrogram(z,0,'labels',gVecStr);
+% % T=clusterdata(dfms,'maxclust',4,'linkage','ward');
 % T=cluster(z,'maxclust',4);
-% % X=zscore(dfms);
-
-figure;
-hold on;
-xlabel('bbLen');
-ylabel('bbWidth');
-zlabel('bbTipWidth');
-gNum=max(gVec);
-%%%
-h1=scatter3(dfms(gVec==1,1),dfms(gVec==1,2),dfms(gVec==1,3),100,T(gVec==1),'Marker','o');
-scatter3(dfms(gVec==1,1),dfms(gVec==1,2),dfms(gVec==1,3),30,T(gVec==1),'filled');
-h2=scatter3(dfms(gVec==2,1),dfms(gVec==2,2),dfms(gVec==2,3),100,T(gVec==2),'Marker','s');
-scatter3(dfms(gVec==2,1),dfms(gVec==2,2),dfms(gVec==2,3),30,T(gVec==2),'filled');
-legend([h1 h2],gnames{1},gnames{2});
-if gNum>=3
-    h3=scatter3(dfms(gVec==3,1),dfms(gVec==3,2),dfms(gVec==3,3),100,T(gVec==3),'Marker','d');
-    scatter3(dfms(gVec==3,1),dfms(gVec==3,2),dfms(gVec==3,3),30,T(gVec==3),'filled');
-    legend([h1 h2 h3],gnames{1},gnames{2},gnames{3});
-end
-if gNum>=4
-    h4=scatter3(dfms(gVec==4,1),dfms(gVec==4,2),dfms(gVec==4,3),100,T(gVec==4),'Marker','p');
-    scatter3(dfms(gVec==4,1),dfms(gVec==4,2),dfms(gVec==4,3),30,T(gVec==4),'filled');
-    legend([h1 h2 h3 h4],gnames{1},gnames{2},gnames{3},gnames{4});
-end
+% 
+% % T=clusterdata(dfms,'maxclust',4,'linkage','ward');
+% % T=cluster(z,'maxclust',4);
+% % % X=zscore(dfms);
+% 
+% figure;
+% hold on;
+% xlabel('bbLen');
+% ylabel('bbWidth');
+% zlabel('bbTipWidth');
+% gNum=max(gVec);
+% %%%
+% h1=scatter3(dfms(gVec==1,1),dfms(gVec==1,2),dfms(gVec==1,3),100,T(gVec==1),'Marker','o');
+% scatter3(dfms(gVec==1,1),dfms(gVec==1,2),dfms(gVec==1,3),30,T(gVec==1),'filled');
+% h2=scatter3(dfms(gVec==2,1),dfms(gVec==2,2),dfms(gVec==2,3),100,T(gVec==2),'Marker','s');
+% scatter3(dfms(gVec==2,1),dfms(gVec==2,2),dfms(gVec==2,3),30,T(gVec==2),'filled');
+% legend([h1 h2],gnames{1},gnames{2});
+% if gNum>=3
+%     h3=scatter3(dfms(gVec==3,1),dfms(gVec==3,2),dfms(gVec==3,3),100,T(gVec==3),'Marker','d');
+%     scatter3(dfms(gVec==3,1),dfms(gVec==3,2),dfms(gVec==3,3),30,T(gVec==3),'filled');
+%     legend([h1 h2 h3],gnames{1},gnames{2},gnames{3});
+% end
+% if gNum>=4
+%     h4=scatter3(dfms(gVec==4,1),dfms(gVec==4,2),dfms(gVec==4,3),100,T(gVec==4),'Marker','p');
+%     scatter3(dfms(gVec==4,1),dfms(gVec==4,2),dfms(gVec==4,3),30,T(gVec==4),'filled');
+%     legend([h1 h2 h3 h4],gnames{1},gnames{2},gnames{3},gnames{4});
+% end
 
 %%%
 % h1=scatter3Wcf(dfms(T==1,1),dfms(T==1,2),dfms(T==1,3),200,gVec(T==1),'filled');
@@ -248,10 +248,10 @@ end
 %     legend([h1 h2 h3 h4 h11 h12 h13 h14],'Class 1','Class 2','Class 3','Class 4',gnames{1},gnames{2},gnames{3},gnames{4});
 % end
 
-hold off;
-axis tight;
-grid on;
-view(3);
+% hold off;
+% axis tight;
+% grid on;
+% view(3);
 
 % T=clusterdata(score,'maxclust',2,'distance','correlation','linkage','ward');
 % X=score;

@@ -26,6 +26,7 @@ if isequal(filename,0)
 % 	disp('User Pressed Cancel.');
 % 	filenames={0};
     filenames='';
+    flFlag=0;
 	return;
 end
 

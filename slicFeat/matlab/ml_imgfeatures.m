@@ -65,7 +65,8 @@ values = [] ;
 %
 % Features from imfeature()
 %
-features = imfeature(double(im2bw(imageproc)), 'EulerNumber') ;
+% features = imfeature(double(im2bw(imageproc)), 'EulerNumber') ;
+features = regionprops(im2bw(imageproc), 'EulerNumber') ;
 
 %
 % Calculate the number of objects in IMAGE
