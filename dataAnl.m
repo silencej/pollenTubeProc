@@ -20,6 +20,7 @@ gVec=inf(50,1); % group id vector.
 obs=cell(1,1); % observation file names.
 gNum=length(files);
 gnames=cell(gNum,1); % group names.
+fnames='';
 load(files{1},'dfm','obfile','fnames','-mat');
 varNum=size(dfm,2);
 dfms=inf(50,varNum);
@@ -106,6 +107,43 @@ biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',fnames,'obsl
 % obsNum=size(dfms,1);
 % obsHandle=h(varNum*2+1:varNum*2+obsNum);
 axis tight;
+
+%% Random forest test.
+
+addpath(genpath('randFor/RF_Class_C'));
+
+dfms=zscore(dfms);
+X = dfms;
+Y = gVec;
+
+[N D] =size(X);
+sprintf(num2str(D(1)));
+randvector = randperm(N);
+%randomly split into 2/3 examples for training and rest for testing
+trainLen=ceil(N*2/3);
+X_trn = X(randvector(1:trainLen),:);
+Y_trn = Y(randvector(1:trainLen));
+X_tst = X(randvector(trainLen+1:end),:);
+Y_tst = Y(randvector(trainLen+1:end));
+ 
+% example 1:  simply use with the defaults
+extra_options.replace = 0 ;
+model = classRF_train(X_trn,Y_trn, 500, 0, extra_options);
+[s idx]=sort(model.importance,'descend');
+fprintf(1,'The most important features: %s - %g, %s - %g, %s - %g.\n',fnames{idx(1)}, s(1), fnames{idx(2)}, s(2),fnames{idx(3)}, s(3));
+% model = classRF_train(X_trn,Y_trn);
+Y_hat = classRF_predict(X_tst,model);
+fprintf(1,'\nexample 1: error rate %f\n',   length(find(Y_hat~=Y_tst))/length(Y_tst));
+C=confusionmat(Y_tst,Y_hat);
+%     image(C);
+figure;
+imagesc(C);
+colorbar;
+% set(gca,'XTick',1:length(X_tst));
+% set(gca,'XTickLabel',materials,'FontSize',8);
+% set(gca,'YTick',1:10);
+% set(gca,'YTickLabel',materials,'FontSize',8);
+
 
 %% PCA without col 1, col 11 and col 12.
 
