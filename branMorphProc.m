@@ -189,7 +189,12 @@ end
 % If use filelist, then makeDfm directly for you.
 if flFlag
     pathname=fileparts(files{1});
-    regCond=['(?<=' filesep ')[^' filesep ']*$'];
+    sepStr=filesep;
+    % On windows, filesep should be escaped.
+    if strcmp(sepStr,'\')
+        sepStr='\\';
+    end
+    regCond=['(?<=' sepStr ')[^' sepStr ']*$'];
     dirname=regexp(pathname,regCond,'match'); % dirname is a cell string.
     makeDfm(pathname,fullfile(pathname,dirname{1}));
 end
