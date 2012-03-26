@@ -250,23 +250,29 @@ else
     % Although the signs are not used in wavyCoef, but it may be useful
     % later as to obtain the wavy frequency.
     % Compare original contours point with smoothed contour point.
-    % npv: Nearest point index vec, without the edges.
-    npiv=zeros(length(x)-2*r,1);
-    for i=1:length(npiv)
-        [mv,npiv]=min();
-    end
-    
+    % npiv: Nearest point index vec, without the edges.
+	[dev npiv]=nearestPoc([x y],[xs ys],handles.scale); % Nearest point on curve.
+	if isempty(dev)
+		error('Curve too short to do nearestPoc.');
+	end
+
+	%% TODO: make smooth_contour smooth the edges either.
+
     % First cmp y, then cmp x, if contour>sContour, then the sign is +,
     % else -.
-    dev=euDist([y x],[ys xs]); % Deviation from the center line.
-    signs=sign(y-ys);
-    xd=x-xs;
+%    dev=euDist([y x],[ys xs]); % Deviation from the center line.
+%    signs=sign(y-ys);
+	signs=sign(y-ys(npiv));
+%    xd=x-xs;
+    xd=x-xs(npiv);
     signs(signs==0)=sign(xd(signs==0));
     dev=dev.*signs;
     wavyCoef=sum(abs(dev))/lbbLen;
-    [pks,locs]=findpeaks(dev);
-    wavyPkThre=6; % Default 6 pixels in 20X.
-    wavyPkThre=wavyPkThre*(handles.scale/20);
+	sWin=20; % Smooth window.
+	sWin=sWin*handles.scale/20;
+    [pks,locs]=findpeaks(filtfilt(dev,1/sWin*ones(sWin,1),1));
+    wavyPkThre=5; % Default ther in 20X scale.
+    wavyPkThre=wavyPkThre*handles.scale/20;
     wavyNum=length(find(pks>wavyPkThre));
     if debugFlag
         pLocs=find(pks>wavyPkThre);
@@ -274,6 +280,7 @@ else
         hold on;
         plot(xs,ys);
         plot(x(locs(pLocs)),y(locs(pLocs)),'or');
+        plot(xs(npiv(locs(pLocs))),ys(npiv(locs(pLocs))),'.r');
     end
 end
 
