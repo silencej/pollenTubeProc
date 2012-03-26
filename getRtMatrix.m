@@ -5,6 +5,8 @@ function [fVec fnames rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMat
 
 global handles;
 
+debugFlag=1;
+
 if nargin<4
 %     widthFlag=0; % The default option is to process neurons, thus no width info.
     distImg=[];
@@ -19,10 +21,9 @@ if isempty(find(skelImg,1))
 	error('Error: The skelImg is all black!');
 end
 
-debugFlag=0;
-if nargout>=2
-    debugFlag=1;
-end
+% if nargout>=2
+%     debugFlag=1;
+% end
 
 maxBblNum=5;
 
@@ -56,16 +57,14 @@ end
 contentPt=0;
 startPoints=zeros(num,2);
 
-if debugFlag
-    bubblesPt=0;
-    bubbles=zeros(30,3); % [row col radius].
-    tipsPt=0;
-    tips=zeros(20,3); % [row col width].
-    newSkel=zeros(size(skelImg));
-    lbbLen=0;
-    lbbImg=[];
-    lbbSubs=[];
-end
+bubblesPt=0;
+bubbles=zeros(30,3); % [row col radius].
+tipsPt=0;
+tips=zeros(20,3); % [row col width].
+newSkel=zeros(size(skelImg));
+lbbLen=0;
+lbbImg=[];
+lbbSubs=[];
 
 for i=1:num
     
@@ -78,28 +77,28 @@ for i=1:num
     qImg=(L==i)&pImg;
     [startPoints(i,1) startPoints(i,2)]=find(qImg,1);
     clear qImg;
-
-    if debugFlag
-        [subMatrix labelNum skelPart bubblesPart tipsPart lbbImg2 lbbLen2 lbbSubs2]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
-        if lbbLen2>lbbLen
-            lbbImg=lbbImg2;
-            lbbLen=lbbLen2;
-            lbbSubs=lbbSubs2;
-        end
-        if ~isempty(bubblesPart)
-            bblNum=size(bubblesPart,1);
-            bubbles(bubblesPt+1:bubblesPt+bblNum,:)=bubblesPart;
-            bubblesPt=bubblesPt+bblNum;
-        end
-        if ~isempty(tipsPart)
-            tipsNum=size(tipsPart,1);
-            tips(tipsPt+1:tipsPt+tipsNum,:)=tipsPart;
-            tipsPt=tipsPt+tipsNum;
-        end
-        newSkel=skelPart | newSkel;
-    else
-        [subMatrix labelNum]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
+    
+    %     if debugFlag
+    [subMatrix labelNum skelPart bubblesPart tipsPart lbbImg2 lbbLen2 lbbSubs2]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
+    if lbbLen2>lbbLen
+        lbbImg=lbbImg2;
+        lbbLen=lbbLen2;
+        lbbSubs=lbbSubs2;
     end
+    if ~isempty(bubblesPart)
+        bblNum=size(bubblesPart,1);
+        bubbles(bubblesPt+1:bubblesPt+bblNum,:)=bubblesPart;
+        bubblesPt=bubblesPt+bblNum;
+    end
+    if ~isempty(tipsPart)
+        tipsNum=size(tipsPart,1);
+        tips(tipsPt+1:tipsPt+tipsNum,:)=tipsPart;
+        tipsPt=tipsPt+tipsNum;
+    end
+    newSkel=skelPart | newSkel;
+%     else
+%         [subMatrix labelNum]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
+%     end
 
     contentLen=size(subMatrix,1);
     if ~contentLen
@@ -110,10 +109,10 @@ for i=1:num
     contentPt=contentPt+contentLen;
 end
 
-if debugFlag
-    bubbles=bubbles(bubbles(:,1)~=0,:);
-    tips=tips(tips(:,1)~=0,:);
-end
+% if debugFlag
+bubbles=bubbles(bubbles(:,1)~=0,:);
+tips=tips(tips(:,1)~=0,:);
+% end
 
 % Clean inf rows.
 rtMatrix=rtMatrix(rtMatrix(:,1)~=inf,:);
@@ -189,21 +188,7 @@ rtMatrix=rtMatrix(si,:);
 sprintf(num2str(v(1)));
 rtMatrix=rtMatrix(si,:);
 
-%% Make fVec.
-% bb, backbone, is the longest backbone starting from soma/pollen.
-% psArea: pollen/soma area in pixel.
-% flBrNum: first level branch number. First-level branches start from
-% soma/pollen.
-% bbChildNum: the number of child branches on the bb, not all.
-% sb: longest second level branch on the bb.
-% lbRad: largest bubble radius.
-% widthRatio: bbTipWidth/bbWidth.
-% bbIntStd: backbone path intensity std.
-% avgIntRatio: mean(branches intensities)/mean(soma/grain intensities).
-fnames={'psArea', 'bbLen', 'bbChildNum', 'flBrNum', 'sbPos', ...
-    'sbLen','bbWidth', 'bbTipWidth', 'sbWidth', 'sbTipWidth', ...
-    'bubbleNum', 'lbRad','widthRatio','bbIntStd','avgIntRatio'};
-% psArea bbLen bbChildNum flBrNum sbPos sbLen bbWidth bbTipWidth sbWidth sbTipWidth bubbleNum lbRad].
+%% Cal all features.
 
 % fVec=zeros(1,length(fnames)); % It is a row vector.
 
@@ -249,9 +234,68 @@ nonSomabw=bw-(bw&somabw);
 brIntAvg=sum(sum(uint8(nonSomabw).*grayOri))/sum(sum(nonSomabw)); % Other intensity average.
 avgIntRatio=brIntAvg/somaIntAvg;
 
+%% Wavy feature.
+% If the lbbLen is too short, then no smooth and no wavy is calculated.
+% waveCoef=sum(|dev|)/lbbLen.
+% wavyNum=number of significant peaks.
+if lbbLen<=450
+    wavyCoef=0;
+    wavyNum=0;
+else
+    x=lbbSubs(:,2);
+    y=lbbSubs(:,1);
+    addpath('smooth_contours');
+    r=201;
+    [xs,ys]=smooth_contours(x,y,r);
+    % Although the signs are not used in wavyCoef, but it may be useful
+    % later as to obtain the wavy frequency.
+    % Compare original contours point with smoothed contour point.
+    % npv: Nearest point index vec, without the edges.
+    npiv=zeros(length(x)-2*r,1);
+    for i=1:length(npiv)
+        [mv,npiv]=min();
+    end
+    
+    % First cmp y, then cmp x, if contour>sContour, then the sign is +,
+    % else -.
+    dev=euDist([y x],[ys xs]); % Deviation from the center line.
+    signs=sign(y-ys);
+    xd=x-xs;
+    signs(signs==0)=sign(xd(signs==0));
+    dev=dev.*signs;
+    wavyCoef=sum(abs(dev))/lbbLen;
+    [pks,locs]=findpeaks(dev);
+    wavyPkThre=6; % Default 6 pixels in 20X.
+    wavyPkThre=wavyPkThre*(handles.scale/20);
+    wavyNum=length(find(pks>wavyPkThre));
+    if debugFlag
+        pLocs=find(pks>wavyPkThre);
+        figure('name','Wavy Points Picked'),plot(x,y,'-k');
+        hold on;
+        plot(xs,ys);
+        plot(x(locs(pLocs)),y(locs(pLocs)),'or');
+    end
+end
+
+%% Make fVec.
+% bb, backbone, is the longest backbone starting from soma/pollen.
+% psArea: pollen/soma area in pixel.
+% flBrNum: first level branch number. First-level branches start from
+% soma/pollen.
+% bbChildNum: the number of child branches on the bb, not all.
+% sb: longest second level branch on the bb.
+% lbRad: largest bubble radius.
+% widthRatio: bbTipWidth/bbWidth.
+% bbIntStd: backbone path intensity std.
+% avgIntRatio: mean(branches intensities)/mean(soma/grain intensities).
+fnames={'psArea', 'bbLen', 'bbChildNum', 'flBrNum', 'sbPos', ...
+    'sbLen','bbWidth', 'bbTipWidth', 'sbWidth', 'sbTipWidth', ...
+    'bubbleNum', 'lbRad','widthRatio','bbIntStd','avgIntRatio','wavyCoef','wavyNum'};
+% psArea bbLen bbChildNum flBrNum sbPos sbLen bbWidth bbTipWidth sbWidth sbTipWidth bubbleNum lbRad].
+
 fVec=[psArea, bbLen, bbChildNum, flBrNum, sbPos, ...
     sbLen, bbWidth, bbTipWidth, sbWidth, sbTipWidth, ...
-    bubbleNum, lbRad, widthRatio, bbIntStd, avgIntRatio];
+    bubbleNum, lbRad, widthRatio, bbIntStd, avgIntRatio,wavyCoef,wavyNum];
 
 % Re-scale if the scale is not 40.
 if floor(handles.scale)~=handles.defaultScale
@@ -265,6 +309,7 @@ end
 % for i=1:length(fnames)
 %     eval(['fVec(i)=' fnames{i}]);
 % end
+
 
 % end.
 if ~widthFlag
