@@ -268,20 +268,25 @@ else
     signs(signs==0)=sign(xd(signs==0));
     dev=dev.*signs;
     wavyCoef=sum(abs(dev))/lbbLen;
-	sWin=20; % Smooth window.
-	sWin=sWin*handles.scale/20;
-    [pks,locs]=findpeaks(filtfilt(dev,1/sWin*ones(sWin,1),1));
+%     [C,L] = wavedec(dev,3,'sym7');
+%     sDev = wden(dev,'rigrsure','s','mln',3,'sym7');
+% 	sWin=30; % Smooth window.
+% 	sWin=sWin*handles.scale/20;
+    [pks locs]=wavePick(abs(dev),1,0);
+    %     [pks,locs]=findpeaks(filtfilt(1/sWin*ones(sWin,1),1,abs(dev)));
+%     [pks,locs]=findpeaks(sDev);
     wavyPkThre=5; % Default ther in 20X scale.
     wavyPkThre=wavyPkThre*handles.scale/20;
     wavyNum=length(find(pks>wavyPkThre));
-    if debugFlag
+%     if 1
         pLocs=find(pks>wavyPkThre);
         figure('name','Wavy Points Picked'),plot(x,y,'-k');
         hold on;
         plot(xs,ys);
         plot(x(locs(pLocs)),y(locs(pLocs)),'or');
         plot(xs(npiv(locs(pLocs))),ys(npiv(locs(pLocs))),'.r');
-    end
+        legend('Original Curve','Center Line','Wavy Point','Correspond Point on Center line');
+%     end
 end
 
 %% Make fVec.

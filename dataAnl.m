@@ -138,7 +138,7 @@ for i=1:N
     Y_trn(i)=[];
     X_tst = X(i,:);
     Y_tst = Y(i);
-    model = classRF_train(X_trn,Y_trn,2000);
+    model = classRF_train(X_trn,Y_trn,10000);
     [s idx]=sort(model.importance,'descend');
     sprintf(num2str(s(1)));
     fVotes(idx(1))=fVotes(idx(1))+1;

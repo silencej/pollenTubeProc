@@ -199,7 +199,7 @@ if flFlag
     makeDfm(pathname,fullfile(pathname,dirname{1}));
 end
 
-if length(files)>1
+if length(files)>2
 	close all;
 end
 
