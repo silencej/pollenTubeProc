@@ -399,11 +399,12 @@ hold off;
 
 % Save result image.
 %     [H,W] = size(ori);
-dpi = 300;
+% dpi = 300;
 %     set(gcf, 'paperposition', [0 0 W/dpi H/dpi]);
 %     set(gcf, 'papersize', [W/dpi H/dpi]);
 set(gcf,'InvertHardCopy','off');
-print([handles.filenameWoExt '.res.png'],'-dpng',sprintf('-r%d',dpi));
+% print([handles.filenameWoExt '.res.png'],'-dpng',sprintf('-r%d',dpi));
+saveas(gcf,[handles.filenameWoExt '.res.eps'],'epsc2'); % eps level2 color.
 
 %     [fVec fnames rtMatrix]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
 
