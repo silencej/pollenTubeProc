@@ -21,6 +21,9 @@
 % A = int32(rand(100,100) < 0.05);
 % D = FastFloyd(1./A)
 %
+% Contributed from Vectorized Floyd-Warshall by Dustin Arendt.
+% Vectorized (fast) implementation of the Floyd-Warshall all pairs shortest path algorithm.
+
 
 function D = fastFloyd(D)
 

@@ -39,8 +39,8 @@ textOutput=1;
 % Specify whether use image thinning or Bai's method for skeletonization.
 handles.useThinFlag=0;
 if ~handles.useThinFlag
-    % % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
-    handles.skelVerNum=13; % Skeleton Vertices number. atleast 5.
+	% % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
+	handles.skelVerNum=13; % Skeleton Vertices number. atleast 5.
 end
 
 % Specify global threshold in range [0 254].
@@ -69,15 +69,15 @@ if isempty(files)
 end
 
 % if flFlag
-%     tempFiles=files;
-%     filesPt=0;
-%     files=cell(1,1);
-%     for i=1:length(tempFiles)
-%         fls=getFilelist(tempFiles{i}); % files.
-%         flsNum=length(fls);
-%         files(filesPt+1:filesPt+flsNum)=fls;
-%         filesPt=filesPt+flsNum;
-%     end
+%	 tempFiles=files;
+%	 filesPt=0;
+%	 files=cell(1,1);
+%	 for i=1:length(tempFiles)
+%		 fls=getFilelist(tempFiles{i}); % files.
+%		 flsNum=length(fls);
+%		 files(filesPt+1:filesPt+flsNum)=fls;
+%		 filesPt=filesPt+flsNum;
+%	 end
 % end
 
 % if length(files)>1
@@ -100,85 +100,85 @@ noRadius=0;
 flagChanged=0;
 dirFlagFile=fullfile(pathstr,'dirFlag'); % directory flags.
 if ~exist(dirFlagFile,'file')
-    noWidthFlag=1;
-    noScale=1;
-    noRadius=1;
-    flagChanged=1;
+	noWidthFlag=1;
+	noScale=1;
+	noRadius=1;
+	flagChanged=1;
 else
-    flags=nan(3,1);
-    fid=fopen(dirFlagFile,'r');
-    tline=fgetl(fid);
-    pt=0;
-    while ischar(tline) && ~isempty(tline)
-        pt=pt+1;
-        flags(pt,1)=str2double(tline);
-        tline=fgetl(fid);
-    end
-    fclose(fid);
-    if pt<1
-        noWidthFlag=1;
-    else
-        handles.widthFlag=(flags(1)~=0);
-        fprintf(1,'The width flag = %g.\n',handles.widthFlag);
-    end
-    if pt<2
-        noScale=1;
-    else
-        handles.scale=flags(2);
-        fprintf(1,'Scale = %g X.\n',handles.scale);
-    end
-    if pt<3
-        noRadius=1;
-        flagChanged=1;
-    else
-        handles.radius=flags(3);
-        fprintf(1,'Cell Radius = %g micrometer.\n',handles.radius);
-    end
+	flags=nan(3,1);
+	fid=fopen(dirFlagFile,'r');
+	tline=fgetl(fid);
+	pt=0;
+	while ischar(tline) && ~isempty(tline)
+		pt=pt+1;
+		flags(pt,1)=str2double(tline);
+		tline=fgetl(fid);
+	end
+	fclose(fid);
+	if pt<1
+		noWidthFlag=1;
+	else
+		handles.widthFlag=(flags(1)~=0);
+		fprintf(1,'The width flag = %g.\n',handles.widthFlag);
+	end
+	if pt<2
+		noScale=1;
+	else
+		handles.scale=flags(2);
+		fprintf(1,'Scale = %g X.\n',handles.scale);
+	end
+	if pt<3
+		noRadius=1;
+		flagChanged=1;
+	else
+		handles.radius=flags(3);
+		fprintf(1,'Cell Radius = %g micrometer.\n',handles.radius);
+	end
 end
 
 if noWidthFlag
-    % widthFlag. Set whether the width and bubbles should be calculated.
-    infoLine='There is no widthFlag setting in current directory. If the branch width is useful for the images here, choose useWidth, otherwise noUseWidth.';
-    choice=questdlg(infoLine,'Generate widthFlag file','useWidth','notUseWidth','Cancel','notUseWidth');
-    if strcmp(choice,'useWidth')
-        handles.widthFlag=1;
-    elseif strcmp(choice,'notUseWidth')
-        handles.widthFlag=0;
-    else % Cancel.
-        fprintf('User canceled.');
-        return;
-    end
+	% widthFlag. Set whether the width and bubbles should be calculated.
+	infoLine='There is no widthFlag setting in current directory. If the branch width is useful for the images here, choose useWidth, otherwise noUseWidth.';
+	choice=questdlg(infoLine,'Generate widthFlag file','useWidth','notUseWidth','Cancel','notUseWidth');
+	if strcmp(choice,'useWidth')
+		handles.widthFlag=1;
+	elseif strcmp(choice,'notUseWidth')
+		handles.widthFlag=0;
+	else % Cancel.
+		fprintf('User canceled.');
+		return;
+	end
 end
 
 if noScale
-    % scale.
-    promptLine=sprintf('Choose a scale value (default %g X object len,).',defaultScale); %  0.1065 um/pixel
-    choice=inputdlg(promptLine,'Scale',1,{num2str(defaultScale)});
-    handles.scale=str2double(choice{1});
+	% scale.
+	promptLine=sprintf('Choose a scale value (default %g X object len,).',defaultScale); %  0.1065 um/pixel
+	choice=inputdlg(promptLine,'Scale',1,{num2str(defaultScale)});
+	handles.scale=str2double(choice{1});
 end
 
 if noRadius
-    % radius.
-    promptLine='Choose a radius value in micrometer (default 15 for tobaco pollen).';
-    choice=inputdlg(promptLine,'Scale',1,{'15'});
-    handles.radius=str2double(choice{1});
+	% radius.
+	promptLine='Choose a radius value in micrometer (default 15 for tobaco pollen).';
+	choice=inputdlg(promptLine,'Scale',1,{'15'});
+	handles.radius=str2double(choice{1});
 end
 
 % Save flags for the dir.
 if flagChanged
-    fid=fopen(dirFlagFile,'w');
-    fprintf(fid,'%g\n',handles.widthFlag~=0);
-    fprintf(fid,'%g\n',handles.scale);
-    fprintf(fid,'%g\n',handles.radius);
-    fclose(fid);
+	fid=fopen(dirFlagFile,'w');
+	fprintf(fid,'%g\n',handles.widthFlag~=0);
+	fprintf(fid,'%g\n',handles.scale);
+	fprintf(fid,'%g\n',handles.radius);
+	fclose(fid);
 end
 
 if ~handles.widthFlag
 % handles.branchThre=50; % Branch skel pixel num.
 % Leave off all branches shorter than 20 diagnal pixels: ceil(20*sqrt(2)).
-    branchThreInPixel=20;
+	branchThreInPixel=20;
 else
-    branchThreInPixel=50;
+	branchThreInPixel=50;
 end
 handles.branchThre=ceil(branchThreInPixel*sqrt(2));
 
@@ -188,15 +188,15 @@ end
 
 % If use filelist, then makeDfm directly for you.
 if flFlag
-    pathname=fileparts(files{1});
-    sepStr=filesep;
-    % On windows, filesep should be escaped.
-    if strcmp(sepStr,'\')
-        sepStr='\\';
-    end
-    regCond=['(?<=' sepStr ')[^' sepStr ']*$'];
-    dirname=regexp(pathname,regCond,'match'); % dirname is a cell string.
-    makeDfm(pathname,fullfile(pathname,dirname{1}));
+	pathname=fileparts(files{1});
+	sepStr=filesep;
+	% On windows, filesep should be escaped.
+	if strcmp(sepStr,'\')
+		sepStr='\\';
+	end
+	regCond=['(?<=' sepStr ')[^' sepStr ']*$'];
+	dirname=regexp(pathname,regCond,'match'); % dirname is a cell string.
+	makeDfm(pathname,fullfile(pathname,dirname{1}));
 end
 
 if length(files)>2
@@ -297,30 +297,30 @@ somabw=imclose(somabw,strel('disk',9));
 
 skelFile=[handles.filenameWoExt '.skel.png'];
 % if exist(skelFile,'file')
-% %     skel=imread(skelFile);
-%     skel=bwmorph(bw,'skel',inf);
+% %	 skel=imread(skelFile);
+%	 skel=bwmorph(bw,'skel',inf);
 % else
 
 % % If the branch is fat, use Bai's method is better.
 % if ~handles.widthFlag
 
 if handles.useThinFlag
-    skel=bwmorph(bw,'thin',inf);
+	skel=bwmorph(bw,'thin',inf);
 else
 % figure,imshow(skel);
 
-%     skel=bwmorph(bw,'skel',inf);
-%     figure,imshow(bw);
+%	 skel=bwmorph(bw,'skel',inf);
+%	 figure,imshow(bw);
 % else
 % skel=div_skeleton_new(4,1,1-bw,0);
 % [skel,I0,x,y,x1,y1,aa,bb]=div_skeleton_new(4,1,1-bw,60);
-    skel=div_skeleton_new(4,1,1-bw,handles.skelVerNum);
+	skel=div_skeleton_new(4,1,1-bw,handles.skelVerNum);
 end
 % end
 
 % skel=(skel~=0); % Convert the uint8 to logical.
 skel=parsiSkel(skel);
-    
+	
 % Save skeleton img.
 imwrite(skel,skelFile,'png');
 
@@ -329,13 +329,13 @@ imwrite(skel,skelFile,'png');
 % [subMatrix labelNum]=decomposeSkel(skelImg,startPoint,labelNum);
 
 if handles.widthFlag
-    distImg=bwdist(~bw);
+	distImg=bwdist(~bw);
 else
-    distImg=[];
+	distImg=[];
 end
 
-%     [rtMatrix
-%     startPoints]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
+%	 [rtMatrix
+%	 startPoints]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
 
 %% Plot result.
 
@@ -358,9 +358,9 @@ ori(:,:,3)=ori1;
 
 close all; % Now only keep one figure open.
 if debugFlag
-    figure('Visible','on');
+	figure('Visible','on');
 else
-    figure('Visible','off');
+	figure('Visible','off');
 end
 imshow(ori,'Border','tight');
 hold on;
@@ -376,37 +376,37 @@ somaPerim=bwperim(somabw,8);
 [row col]=find(somaPerim);
 plot(col,row,'.b');
 for i=1:size(startPoints,1)
-    plot(startPoints(i,2),startPoints(i,1),'*r');
+	plot(startPoints(i,2),startPoints(i,1),'*r');
 end
 
 % If widthFlag is off, bubbles and tips will be empty.
 for j=1:size(bubbles,1)
-    radius=bubbles(j,3);
-    row=bubbles(j,1)-radius;
-    col=bubbles(j,2)-radius;
-    rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
-    plot(col+radius,row+radius,'.c','MarkerSize',15); % plot center.
+	radius=bubbles(j,3);
+	row=bubbles(j,1)-radius;
+	col=bubbles(j,2)-radius;
+	rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
+	plot(col+radius,row+radius,'.c','MarkerSize',15); % plot center.
 end
 for j=1:size(tips,1)
-    radius=tips(j,3);
-    row=tips(j,1)-radius;
-    col=tips(j,2)-radius;
-    rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','m');
-    plot(col+radius,row+radius,'.m','MarkerSize',15); % plot center.
+	radius=tips(j,3);
+	row=tips(j,1)-radius;
+	col=tips(j,2)-radius;
+	rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','m');
+	plot(col+radius,row+radius,'.m','MarkerSize',15); % plot center.
 end
 
 hold off;
 
 % Save result image.
-%     [H,W] = size(ori);
+%	 [H,W] = size(ori);
 % dpi = 300;
-%     set(gcf, 'paperposition', [0 0 W/dpi H/dpi]);
-%     set(gcf, 'papersize', [W/dpi H/dpi]);
+%	 set(gcf, 'paperposition', [0 0 W/dpi H/dpi]);
+%	 set(gcf, 'papersize', [W/dpi H/dpi]);
 set(gcf,'InvertHardCopy','off');
 % print([handles.filenameWoExt '.res.png'],'-dpng',sprintf('-r%d',dpi));
 saveas(gcf,[handles.filenameWoExt '.res.eps'],'epsc2'); % eps level2 color.
 
-%     [fVec fnames rtMatrix]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
+%	 [fVec fnames rtMatrix]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
 
 %% Save rt.mat and fv.mat.
 
@@ -422,9 +422,9 @@ clear somabw;
 %% Text output.
 
 if textOutput
-    fprintf(1,'The length of major backbone = %g pixels.\n',rtMatrix(1,4));
-    fprintf(1,'The tip width of major backbone = %g pixels.\n',rtMatrix(1,6));
-    toc;
+	fprintf(1,'The length of major backbone = %g pixels.\n',rtMatrix(1,4));
+	fprintf(1,'The tip width of major backbone = %g pixels.\n',rtMatrix(1,6));
+	toc;
 end
 
 end
