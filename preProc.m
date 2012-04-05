@@ -346,7 +346,7 @@ mc.oriThre=oriThre;
 mc.cutFrameThre=handles.cutFrameThre;
 mc.luCorner=floor(handles.luCorner);
 mc.rlCorner=floor(handles.rlCorner);
-mc.somafile=somafile;
+mc.somabwfile=somaBwFile;
 if ~exist('somaThre','var')
     somaThre=255;
 end
