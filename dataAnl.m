@@ -135,31 +135,56 @@ model = classRF_train(X,Y,10000,0,exopt);
 
 gini=model.importance;
 gini=gini(:,end);
+[ginis inds]=sort(gini,'descend');
+fnamesS=fnames;
+for i=1:length(fnamesS)
+    fnamesS(i)=fnames(inds(i));
+end
+sprintf(num2str(ginis(1)));
 err=model.errtr;
+merr=mean(err,1);
+errorRate=merr(1);
+classErr=merr(2:end);
+fprintf(1,'In train phase, average error rate: %g\n',errorRate);
+fprintf(1,'Error rates for classes: \n');
+for i=1:length(gnames)
+    fprintf(1,'%s\t',gnames{i});
+end
+fprintf(1,'\n');
+fprintf(1,'%g\t',classErr);
+fprintf(1,'\n');
+fprintf(1,'Sorted variables: ');
+fprintf(1,'%s\t%s\t%s\t%s.\n',fnamesS{1},fnamesS{2},fnamesS{3},fnamesS{4});
+fprintf(1,'Gini index: %g\t%g\t%g\t%g.\n',ginis(1),ginis(2),ginis(3),ginis(4));
 
-% % Leave-one-out cross validation.
+% Leave-one-out cross validation.
 % fVotes=zeros(length(fnames),1); % The first 3 votes.
-% errorRate=0;
-% for i=1:N
-%     X_trn = X;
-%     Y_trn = Y;
-%     X_trn(i,:)=[];
-%     Y_trn(i)=[];
-%     X_tst = X(i,:);
-%     Y_tst = Y(i);
-%     model = classRF_train(X_trn,Y_trn,10000);
+errorRate=0;
+tstVec=zeros(N,1);
+hatVec=zeros(N,1);
+for i=1:N
+    X_trn = X;
+    Y_trn = Y;
+    X_trn(i,:)=[];
+    Y_trn(i)=[];
+    X_tst = X(i,:);
+    Y_tst = Y(i);
+    model = classRF_train(X_trn,Y_trn,10000);
 %     [s idx]=sort(model.importance,'descend');
 %     sprintf(num2str(s(1)));
 %     fVotes(idx(1))=fVotes(idx(1))+1;
 %     fVotes(idx(2))=fVotes(idx(2))+1;
 %     fVotes(idx(3))=fVotes(idx(3))+1;
-% Y_hat = classRF_predict(X_tst,model);
-% er=length(find(Y_hat~=Y_tst))/length(Y_tst);
-% Y_hat = classRF_predict(X,model);
-% er=length(find(Y_hat~=Y))/length(Y);
-% errorRate=errorRate+er;
-% end
-% errorRate=errorRate/N;
+Y_hat = classRF_predict(X_tst,model);
+tstVec(i)=Y_tst;
+hatVec(i)=Y_hat;
+% C=confusionmat(Y_tst,Y_hat);
+% aveConf=aveConf+C;
+
+er=length(find(Y_hat~=Y_tst))/length(Y_tst);
+errorRate=errorRate+er;
+end
+errorRate=errorRate/N;
 % errorRate=er/N;
  
 % % example 1:  simply use with the defaults
@@ -178,15 +203,17 @@ err=model.errtr;
 % Y_hat = classRF_predict(X_tst,model);
 % fprintf(1,'\nexample 1: error rate %f\n',   length(find(Y_hat~=Y_tst))/length(Y_tst));
 
-fprintf(1,'Average error rate: %g\n',errorRate);
-C=confusionmat(Y_tst,Y_hat);
+fprintf(1,'Predict phase: average error rate: %g\n',errorRate);
+C=confusionmat(tstVec,hatVec);
 figure;
+% aveConf=aveConf./N;
 imagesc(C);
+% imagesc(aveConf);
 colorbar;
-set(gca,'XTick',1:length(X_tst));
-set(gca,'XTickLabel',materials,'FontSize',8);
-set(gca,'YTick',1:10);
-set(gca,'YTickLabel',materials,'FontSize',8);
+% set(gca,'XTick',1:length(X_tst));
+% set(gca,'XTickLabel',materials,'FontSize',8);
+% set(gca,'YTick',1:10);
+% set(gca,'YTickLabel',materials,'FontSize',8);
 
 
 %% PCA without col 1, col 11 and col 12.
