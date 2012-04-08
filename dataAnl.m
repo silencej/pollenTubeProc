@@ -156,6 +156,7 @@ errorRate=errorRate/N;
 % [s idx]=sort(model.importance,'descend');
 % fprintf(1,'The most important features: %s - %g, %s - %g, %s - %g.\n',fnames{idx(1)}, s(1), fnames{idx(2)}, s(2),fnames{idx(3)}, s(3));
 [s idx]=sort(fVotes,'descend');
+fprintf(1,'The total sample size is %g\n.',size(dfms,1));
 fprintf(1,'The most important features: %s - %g votes, %s - %g, %s - %g.\n',fnames{idx(1)}, s(1), fnames{idx(2)}, s(2),fnames{idx(3)}, s(3));
 % model = classRF_train(X_trn,Y_trn);
 % Y_hat = classRF_predict(X_tst,model);
