@@ -1,11 +1,11 @@
 %run plethora of tests
 
-%compile everything
-if strcmpi(computer,'PCWIN') |strcmpi(computer,'PCWIN64')
-   compile_windows
-else
-   compile_linux
-end
+% %compile everything
+% if strcmpi(computer,'PCWIN') |strcmpi(computer,'PCWIN64')
+%    compile_windows
+% else
+%    compile_linux
+% end
 
 total_train_time=0;
 total_test_time=0;
