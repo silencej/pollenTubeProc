@@ -5,17 +5,21 @@ function [fVec fnames rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMat
 
 global handles;
 
-debugFlag=1;
+% debugFlag=1;
+neuronFlag=1;
 
 if nargin<4
 %     widthFlag=0; % The default option is to process neurons, thus no width info.
     distImg=[];
 end
-if isempty(distImg)
-    widthFlag=0;
-else
-    widthFlag=1;
-end
+
+% If distImg is empty, set widthFlag=0;
+% if isempty(distImg)
+%     widthFlag=0;
+% else
+%     widthFlag=1;
+% end
+pollenFlag=handles.pollenFlag;
 
 if isempty(find(skelImg,1))
 	error('Error: The skelImg is all black!');
@@ -45,17 +49,16 @@ skelImg=skelImg.*(~somabw);
 [L num]=bwlabel(skelImg,8);
 labelNum=0; % labelNum is the present occupied label number. The new branch should start its label as labelNum+1.
 
-if ~widthFlag
-    rtMatrix=inf(50,4);
-    % [parentId, id, branchPos, length].
-else
+% if ~widthFlag
+%     rtMatrix=inf(50,4);
+%     % [parentId, id, branchPos, length].
+% else
     rtMatrix=inf(50,6+maxBblNum*2);
     % [parentId, id, branchPos, length, bbWidth, tipWidth, bubbles...].
-end
-
+% end
 
 contentPt=0;
-startPoints=zeros(num,2);
+startPoints=zeros(num,3); % [row col usefulFlag].
 
 bubblesPt=0;
 bubbles=zeros(30,3); % [row col radius].
@@ -65,6 +68,11 @@ newSkel=zeros(size(skelImg));
 lbbLen=0;
 lbbImg=[];
 lbbSubs=[];
+
+if ~pollenFlag
+    flbdNum=zeros(20,2); % [id dNum].
+    fp=0;
+end
 
 for i=1:num
     
@@ -78,8 +86,7 @@ for i=1:num
     [startPoints(i,1) startPoints(i,2)]=find(qImg,1);
     clear qImg;
     
-    %     if debugFlag
-    [subMatrix labelNum skelPart bubblesPart tipsPart lbbImg2 lbbLen2 lbbSubs2]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
+    [subMatrix labelNum skelPart bubblesPart tipsPart lbbImg2 lbbLen2 lbbSubs2]=decomposeSkel(L==i,startPoints(i,1:2),labelNum,branchThre,distImg,maxBblNum);
     if lbbLen2>lbbLen
         lbbImg=lbbImg2;
         lbbLen=lbbLen2;
@@ -96,17 +103,28 @@ for i=1:num
         tipsPt=tipsPt+tipsNum;
     end
     newSkel=skelPart | newSkel;
-%     else
-%         [subMatrix labelNum]=decomposeSkel(L==i,startPoints(i,:),labelNum,branchThre,distImg,maxBblNum);
-%     end
 
     contentLen=size(subMatrix,1);
     if ~contentLen
+        startPoints(i,3)=0; % It's not useful.
         continue;
+    else
+        startPoints(i,3)=1;
+    end
+    if neuronFlag
+        fp=fp+1;
+        flbdNum(fp,:)=[subMatrix(1,2) contentLen-1];
+        if subMatrix(1,1)
+            error('Submatrix first row not the first level branch!');
+        end
     end
     
 	rtMatrix(contentPt+1:contentPt+contentLen,:)=subMatrix;
     contentPt=contentPt+contentLen;
+end
+
+if neuronFlag
+    flbdNum=flbdNum(flbdNum(:,1)~=0,:);
 end
 
 % if debugFlag
@@ -118,7 +136,7 @@ tips=tips(tips(:,1)~=0,:);
 rtMatrix=rtMatrix(rtMatrix(:,1)~=inf,:);
 
 if find(rtMatrix(:)==inf)
-    error('Inf entry in rtMatrix! Now widthFlag is 0, so this should not happen!');
+    error('Inf entry in rtMatrix!');
 end
 
 % Shrink trailing 0 cols out.
@@ -190,14 +208,82 @@ rtMatrix=rtMatrix(si,:);
 
 %% Cal all features.
 
+if pollenFlag
+    [fnames fVec]=pollenFeat(rtMatrix,somabw,bw,lbbLen,lbbSubs,grayOri,bubbles);
+else
+    [fnames fVec]=neuronFeat(rtMatrix,somabw,lbbLen,bubbles,flbdNum);
+end
+
+end
+
+function [fnames fVec]=neuronFeat(rtMatrix,somabw,lbbLen,bubbles,flbdNum)
+
+global handles;
+
+fnames={'somaSize','lbLen','flbNum','flbdnMean','flbdnStd',...
+    'flbLenMean','flbLenStd','bbWidth', 'bbTipWidth', ...
+    'tipWidthMean','tipWidthStd',...
+    'bubbleNum', 'lbRad','widthRatio'};
+
+somaSize=sum(sum(somabw));
+lbLen=lbbLen; % Largest branch length.
+
+% First level branches.
+flb=rtMatrix(rtMatrix(:,1)==0,:);
+
+% First level branch number.
+flbNum=size(flb,1);
+
+% First level branch's descendent number. The descendents here include
+% all children and grandchilren and grand-grandchildren.
+flbdnMean=mean(flbdNum(:,2));
+flbdnStd=std(flbdNum(:,2));
+
+% First level branch length.
+flbLenMean=mean(flb(:,4));
+flbLenStd=std(flb(:,4));
+
+bbWidth=rtMatrix(1,5);
+bbTipWidth=rtMatrix(1,6);
+
+tipWidthMean=mean(rtMatrix(:,6));
+tipWidthStd=std(rtMatrix(:,6));
+
+bubbleNum=size(bubbles,1);
+if ~bubbleNum
+    lbRad=0;
+else
+    lbRad=max(bubbles(:,3));
+end
+widthRatio=bbTipWidth/bbWidth;
+
+fVec=[somaSize lbLen flbNum flbdnMean flbdnStd ...
+    flbLenMean flbLenStd bbWidth bbTipWidth ...
+    tipWidthMean tipWidthStd ...
+    bubbleNum lbRad widthRatio];
+
+% Re-scale if the scale is not defaultScale, 20X.
+if floor(handles.scale)~=handles.defaultScale
+    sf=handles.defaultScale/handles.scale;
+    fVec(1)=fVec(1)*(sf^2); % area is sf^2 scaled.
+    fVec(2)=fVec(2)*sf;
+    fVec(6:9)=fVec(6:9).*sf;
+    fVec(11)=fVec(11)*sf;
+end
+
+end
+
+function [fnames fVec]=pollenFeat(rtMatrix,somabw,bw,lbbLen,lbbSubs,grayOri,bubbles)
+global handles;
+
 % fVec=zeros(1,length(fnames)); % It is a row vector.
 
 % Expand rtMatrix to 6 cols if ~widthFlag. Then it will be reverted before
 % it's returned.
-if ~widthFlag
-    tempRtMat=rtMatrix;
-    rtMatrix=[rtMatrix zeros(size(rtMatrix,1),2)];
-end
+% if ~widthFlag
+%     tempRtMat=rtMatrix;
+rtMatrix=[rtMatrix zeros(size(rtMatrix,1),2)];
+% end
 
 psArea=sum(sum(somabw));
 bbLen=lbbLen;
@@ -309,7 +395,7 @@ fVec=[psArea, bbLen, bbChildNum, flBrNum, sbPos, ...
     sbLen, bbWidth, bbTipWidth, sbWidth, sbTipWidth, ...
     bubbleNum, lbRad, widthRatio, bbIntStd, avgIntRatio,wavyCoef,wavyNum];
 
-% Re-scale if the scale is not 40.
+% Re-scale if the scale is not default scale.
 if floor(handles.scale)~=handles.defaultScale
     sf=handles.defaultScale/handles.scale;
     fVec(1)=fVec(1)*(sf^2); % area is sf^2 scaled.
@@ -324,8 +410,8 @@ end
 
 
 % end.
-if ~widthFlag
-    rtMatrix=tempRtMat;
-end
+% if ~widthFlag
+%     rtMatrix=tempRtMat;
+% end
 
 end

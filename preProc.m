@@ -11,7 +11,12 @@ clear global;
 fprintf(1,'PreProc is running...\n');
 global handles;
 
-handles.claheFlag=1;
+% handles.claheFlag=1;
+% % If the pollen image, with has high SNR, no CLAHE is used.
+% % The usage of CLAHE causes trouble for Intensity features of pollen.
+% if handles.pollenFlag
+%     handles.claheFlag=0;
+% end
 
 % "cutMargin" is used in:
 % 1. cutFrameFcn.
@@ -184,13 +189,15 @@ if ~useOldBw
     end
     bw=applyThre(oriThre);
     set(handles.fH,'Name','Global Thresholding');
-    fprintf(1,'======================================================================\nThe present threshold is %d.\n',oriThre);
-    reply=input('If you want to reset the threshold, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+    infoLine=sprintf('The present threshold is %d.\nIf you want to reset the threshold, input in range [0 254].\nOtherwise if the threshhold is ok, press OK.',oriThre);
+    reply=inputdlg(infoLine,'Global Thresholding',1);
+    reply=reply{1};
     while ~isempty(reply)
         oriThre=uint8(str2double(reply));
         bw=applyThre(oriThre);
-        fprintf(1,'======================================================================\nThe present threshold is %d.\n',oriThre);
-        reply=input('If you want to reset the threshold, input here in range [0 254].\nIf the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+        infoLine=sprintf('The present threshold is %d.\nIf you want to reset the threshold, input in range [0 254].\nOtherwise if the threshhold is ok, press OK.',oriThre);
+        reply=inputdlg(infoLine,'Global Thresholding',1);
+        reply=reply{1};
     end
 end
 
@@ -280,12 +287,12 @@ if exist(somaBwFile,'file')
     bw=imread(somaBwFile);
     handles.useOldSoma=1;
     if size(bw,1)~=size(grayOri,1) || size(bw,2)~=size(grayOri,2)
-        if isempty(mc)
+%         if isempty(mc)
             bw=[];
             handles.useOldSoma=0;
-        else
-            bw=bw(mc.luCorner(1):mc.rlCorner(1),mc.luCorner(2):mc.rlCorner(2),:);
-        end
+%         else
+%             bw=bw(mc.luCorner(1):mc.rlCorner(1),mc.luCorner(2):mc.rlCorner(2),:);
+%         end
     end
 end
 
@@ -298,14 +305,19 @@ else
         somaThre=graythresh(grayOri)*255;
     end
     bw=applyThre(somaThre);
-    fprintf(1,'======================================================================\nThe present threshold is %d.\n',somaThre);
-    reply=input('If you want to reset the threshold, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+
+    set(handles.fH,'Name','Global Thresholding for Soma/Pollen grain');
+    infoLine=sprintf('The present threshold is %d.\nIf you want to reset the threshold, input in range [0 254].\nOtherwise if the threshhold is ok, press OK.',somaThre);
+    reply=inputdlg(infoLine,'Global Thresholding for Soma/Pollen grain',1);
+    reply=reply{1};
     while ~isempty(reply)
         somaThre=uint8(str2double(reply));
         bw=applyThre(somaThre);
-        fprintf(1,'======================================================================\nThe present threshold is %d.\n',somaThre);
-        reply=input('If you want to reset the threshold, input here in range [0 254].\nIf the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
+        infoLine=sprintf('The present threshold is %d.\nIf you want to reset the threshold, input in range [0 254].\nOtherwise if the threshhold is ok, press OK.',somaThre);
+        reply=inputdlg(infoLine,'Global Thresholding for Soma/Pollen grain',1);
+        reply=reply{1};
     end
+
 end
 
 % Ask if reset the region.
@@ -381,13 +393,13 @@ if handles.hasAnnoFile && exist(cutOriFile,'file')
     end
     if strcmp(choice,'Yes')
         ori=imread(cutOriFile);
-        if handles.claheFlag
-            [grayOri rgbChan]=getGrayImg(ori); % rgbChan: rgb channel.
-            grayOri=adapthisteq(grayOri); % CLAHE.
-            ori(:,:,rgbChan)=grayOri;
-        else
+%         if handles.claheFlag
+%             [grayOri rgbChan]=getGrayImg(ori); % rgbChan: rgb channel.
+%             grayOri=adapthisteq(grayOri); % CLAHE.
+%             ori(:,:,rgbChan)=grayOri;
+%         else
             grayOri=getGrayImg(ori);
-        end
+%         end
         handles.useOldCrop=1;
         return;
     end
@@ -395,17 +407,17 @@ end
 
 ori=imread(handles.filename);
 
-if handles.claheFlag
-    [grayOri rgbChan]=getGrayImg(ori);
-    grayOri=adapthisteq(grayOri); % CLAHE.
-    ori(:,:,rgbChan)=grayOri;
-else
+% if handles.claheFlag
+%     [grayOri rgbChan]=getGrayImg(ori);
+%     grayOri=adapthisteq(grayOri); % CLAHE.
+%     ori(:,:,rgbChan)=grayOri;
+% else
     % Get grayOri.
     grayOri=getGrayImg(ori);
-end
+% end
 
 % Thresholding and Cutting.
-if isempty(handles.cutFrameThre)
+if isempty(handles.cutFrameThre) || ~handles.cutFrameThre
     handles.cutFrameThre=graythresh(grayOri)*255;
 end
 bw=(grayOri>handles.cutFrameThre);
@@ -416,27 +428,6 @@ bw=keepLargest(bw);
 [luCorner rlCorner]=plotCutFrame(luCorner,rlCorner);
 
 
-% fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',handles.cutFrameThre);
-% reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
-
-% When the user finds the image is not good enough, he/she will directly
-% press RETURN, and the reply is empty.
-% if isempty(reply)
-%     error('No threshold is input. It may be because you thought the image is not good enough and gave up preprocessing.');
-% end
-
-% while ~isempty(reply)
-% 	handles.cutFrameThre=uint8(str2double(reply));
-% 	bw=(grayOri>handles.cutFrameThre);
-% 	bw=imfill(bw,'holes');
-% 	bw=(bw~=0);
-% 	bw=keepLargest(bw);
-% 	[luCorner rlCorner]=getCutFrame(bw,handles.cutMargin);
-% 	plotCutFrame(luCorner,rlCorner);
-% 	fprintf(1,'======================================================================\nThe present CutFrame threshold is %d.\n',handles.cutFrameThre);
-% 	reply=input('If the CutFrame threshold is bad, input here in range [0 254].\nOtherwise if the threshhold is ok, press ENTER\nAn integer or Enter: ','s');
-% end
-
 % handles.cutFrameThre=thre;
 handles.luCorner=luCorner;
 handles.rlCorner=rlCorner;
@@ -446,18 +437,7 @@ ori=getPart(ori,luCorner,rlCorner);
 grayOri=getGrayImg(ori);
 imwrite(ori,cutOriFile);
 
-% Get other cuts.
-% luRow=handles.luCorner(1);
-% luCol=handles.luCorner(2);
-% rlRow=handles.rlCorner(1);
-% rlCol=handles.rlCorner(2);
-% ori=ori(luRow:rlRow,luCol:rlCol,:); % oriPart for show.
 
-% grayOriPart=grayOri(luRow:rlRow,luCol:rlCol);
-% oriPart=ori(luRow:rlRow,luCol:rlCol,:); % oriPart for show.
-
-% grayOriPart=getPart(grayOri);
-% oriPart=getPart(ori);
 end
 
 %% Utility functions.
@@ -557,26 +537,36 @@ end
 if addFlag
     whatStr='background';
     doStr='Add';
+    sIdx=1;
 else
     whatStr='foreground';
     doStr='Delete';
+    sIdx=2;
 end
 infoline=sprintf('You have chosen mostly %s pixels. Do %s?',whatStr,doStr);
-choice=questdlg(infoline,'Addition/Deletion','Add','Delete','AddWoAI',doStr);
+% choice=questdlg(infoline,'Addition/Deletion','Add','Delete','AddWoAI','De
+% leteWoAI',doStr);
+selection=listdlg('listString',{'Add','Delete','AddWoAI','DeleteWoAI'},'SelectionMode','single','InitialValue',sIdx,'Name','Addition/Deletion','PromptString',infoline,'listSize',[160,200]);
 % if strcmp(choice,'Cancel')
 %     bw=[];
 %     return;
-aiFlag=0;
-if strcmp(choice,'AddWoAI')
+aiFlag=1;
+% if strcmp(choice,'AddWoAI')
+if selection==3
     bw=bw|mask;
-    aiFlag=1;
-elseif strcmp(choice,'Add')
+    aiFlag=0;
+% elseif strcmp(choice,'Add')
+elseif selection==1
     addFlag=1;
-else
+% elseif strcmp(choice,'Delete')
+elseif selection==2
     addFlag=0;
+else % DeleteWoAI
+    bw=bw-andBw;
+    aiFlag=0;
 end
 
-if ~aiFlag
+if aiFlag
     if addFlag
         % window=uint8(grayOri.*uint8(mask));
         window=uint8(grayOri.*uint8(minusBw));
@@ -677,6 +667,7 @@ global handles ori;
 
 if ~isfield(handles,'fH') || ~ishandle(handles.fH)
 	handles.fH=figure;
+    set(handles.fH,'Name',handles.filenameWoExt);
 end
 
 figure(handles.fH);

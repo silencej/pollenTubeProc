@@ -36,13 +36,6 @@ end
 % The text output may be needed by users.
 textOutput=1;
 
-% Specify whether use image thinning or Bai's method for skeletonization.
-handles.useThinFlag=0;
-if ~handles.useThinFlag
-	% % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
-	handles.skelVerNum=13; % Skeleton Vertices number. atleast 5.
-end
-
 % Specify global threshold in range [0 254].
 
 % handles.widthFlag=0; % Set in the following codes.
@@ -94,13 +87,15 @@ warning off signal:findpeaks:noPeaks;
 
 pathstr=fileparts(files{1});
 
-noWidthFlag=0;
+% noWidthFlag=0;
+emptyPollenFlag=0; % Flag for whether there is pollenFlag specified.
 noScale=0;
 noRadius=0;
 flagChanged=0;
 dirFlagFile=fullfile(pathstr,'dirFlag'); % directory flags.
 if ~exist(dirFlagFile,'file')
-	noWidthFlag=1;
+% 	noWidthFlag=1;
+    emptyPollenFlag=1;
 	noScale=1;
 	noRadius=1;
 	flagChanged=1;
@@ -116,10 +111,10 @@ else
 	end
 	fclose(fid);
 	if pt<1
-		noWidthFlag=1;
+		emptyPollenFlag=1;
 	else
-		handles.widthFlag=(flags(1)~=0);
-		fprintf(1,'The width flag = %g.\n',handles.widthFlag);
+		handles.pollenFlag=(flags(1)~=0);
+		fprintf(1,'The pollen flag = %g.\n',handles.pollenFlag);
 	end
 	if pt<2
 		noScale=1;
@@ -136,14 +131,15 @@ else
 	end
 end
 
-if noWidthFlag
-	% widthFlag. Set whether the width and bubbles should be calculated.
-	infoLine='There is no widthFlag setting in current directory. If the branch width is useful for the images here, choose useWidth, otherwise noUseWidth.';
-	choice=questdlg(infoLine,'Generate widthFlag file','useWidth','notUseWidth','Cancel','notUseWidth');
-	if strcmp(choice,'useWidth')
-		handles.widthFlag=1;
-	elseif strcmp(choice,'notUseWidth')
-		handles.widthFlag=0;
+if emptyPollenFlag
+	% Pollen Flag. Set to be 1 if pollen tube images, or 0 if neurons.
+	% images.
+	infoLine='There is no pollenFlag setting in current directory. Please specify.';
+	choice=questdlg(infoLine,'Generate dirFlag file','Pollen','Neuron','Cancel','Pollen');
+	if strcmp(choice,'Pollen')
+		handles.pollenFlag=1;
+	elseif strcmp(choice,'Neuron')
+		handles.pollenFlag=0;
 	else % Cancel.
 		fprintf('User canceled.');
 		return;
@@ -152,7 +148,7 @@ end
 
 if noScale
 	% scale.
-	promptLine=sprintf('Choose a scale value (default %g X object len,).',defaultScale); %  0.1065 um/pixel
+	promptLine=sprintf('Choose a scale value (default %g X,).',defaultScale); %  0.1065 um/pixel
 	choice=inputdlg(promptLine,'Scale',1,{num2str(defaultScale)});
 	handles.scale=str2double(choice{1});
 end
@@ -167,20 +163,29 @@ end
 % Save flags for the dir.
 if flagChanged
 	fid=fopen(dirFlagFile,'w');
-	fprintf(fid,'%g\n',handles.widthFlag~=0);
+	fprintf(fid,'%g\n',handles.pollenFlag~=0);
 	fprintf(fid,'%g\n',handles.scale);
 	fprintf(fid,'%g\n',handles.radius);
 	fclose(fid);
 end
 
-if ~handles.widthFlag
+% Specify whether use image thinning or Bai's method for skeletonization.
+handles.useThinFlag=0;
+if ~handles.pollenFlag
 % handles.branchThre=50; % Branch skel pixel num.
 % Leave off all branches shorter than 20 diagnal pixels: ceil(20*sqrt(2)).
 	branchThreInPixel=20;
+    handles.useThinFlag=1;
 else
 	branchThreInPixel=50;
 end
 handles.branchThre=ceil(branchThreInPixel*sqrt(2));
+
+if ~handles.useThinFlag
+	% % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
+	handles.skelVerNum=13; % Skeleton Vertices number. atleast 5.
+end
+
 
 for i=1:length(files)
 	procImg(files{i});
@@ -302,7 +307,6 @@ skelFile=[handles.filenameWoExt '.skel.png'];
 % else
 
 % % If the branch is fat, use Bai's method is better.
-% if ~handles.widthFlag
 
 if handles.useThinFlag
 	skel=bwmorph(bw,'thin',inf);
@@ -328,11 +332,11 @@ imwrite(skel,skelFile,'png');
 % [backbone branches]=decomposeSkel(skel,somabw,handles.branchThre);
 % [subMatrix labelNum]=decomposeSkel(skelImg,startPoint,labelNum);
 
-if handles.widthFlag
-	distImg=bwdist(~bw);
-else
-	distImg=[];
-end
+% if handles.widthFlag
+distImg=bwdist(~bw);
+% else
+% 	distImg=[];
+% end
 
 %	 [rtMatrix
 %	 startPoints]=getRtMatrix(skel,somabw,handles.branchThre,handles.widthFlag);
@@ -343,8 +347,13 @@ end
 grayOri=getGrayImg(ori);
 [fVec fnames rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMatrix(skel,somabw,handles.branchThre,distImg,grayOri,bw);
 sprintf([num2str(fVec(1)) fnames{1}]);
-% Plot the ori with longest backbone width.
-lbbWimg=imdilate(lbbImg,strel('disk',floor(rtMatrix(1,5))));
+% Plot the ori with longest backbone width, lbw.
+% if handles.widthFlag
+lbw=floor(rtMatrix(1,5));
+% else
+%     lbw=10;
+% end
+lbbWimg=imdilate(lbbImg,strel('disk',lbw));
 bwP=bwperim(lbbWimg); % perimeter binary image.
 ori1=ori(:,:,1); % ori 1 layer for temp use.
 ori1(bwP)=255;
@@ -376,7 +385,9 @@ somaPerim=bwperim(somabw,8);
 [row col]=find(somaPerim);
 plot(col,row,'.b');
 for i=1:size(startPoints,1)
-	plot(startPoints(i,2),startPoints(i,1),'*r');
+    if startPoints(i,3)
+        plot(startPoints(i,2),startPoints(i,1),'*r');
+    end
 end
 
 % If widthFlag is off, bubbles and tips will be empty.
@@ -397,16 +408,10 @@ end
 
 hold off;
 
-% Save result image.
-%	 [H,W] = size(ori);
-% dpi = 300;
-%	 set(gcf, 'paperposition', [0 0 W/dpi H/dpi]);
-%	 set(gcf, 'papersize', [W/dpi H/dpi]);
 set(gcf,'InvertHardCopy','off');
 % print([handles.filenameWoExt '.res.png'],'-dpng',sprintf('-r%d',dpi));
 saveas(gcf,[handles.filenameWoExt '.res.eps'],'epsc2'); % eps level2 color.
 
-%	 [fVec fnames rtMatrix]=getRtMatrix(skel,somabw,handles.branchThre,distImg);
 
 %% Save rt.mat and fv.mat.
 
@@ -422,9 +427,11 @@ clear somabw;
 %% Text output.
 
 if textOutput
-	fprintf(1,'The length of major backbone = %g pixels.\n',rtMatrix(1,4));
-	fprintf(1,'The tip width of major backbone = %g pixels.\n',rtMatrix(1,6));
-	toc;
+    if handles.pollenFlag
+        fprintf(1,'The length of major backbone = %g pixels.\n',rtMatrix(1,4));
+        fprintf(1,'The tip width of major backbone = %g pixels.\n',rtMatrix(1,6));
+    end
+    toc;
 end
 
 end

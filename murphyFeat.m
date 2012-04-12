@@ -38,9 +38,11 @@ if pt<3
 end
 scaleX=flags(2);
 if floor(scaleX)==20
-    scale=0.2131;
+    scale=0.2131; % um/pixel.
 elseif floor(scaleX)==40
     scale=0.1065;
+elseif floor(scaleX)==10
+    scale=0.4262;
 end
 fprintf(1,'Scale = %g X, or %g um per pixel.\n',scaleX,scale);
 radius=flags(3);

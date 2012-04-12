@@ -17,6 +17,7 @@ for i=1:length(files)
     sprintf(pathname);
     fprintf(fid,'%s\n',[filename extname]);
 end
+fclose(fid);
 
 end
 
