@@ -1,6 +1,12 @@
 function dataAnl
 
 
+pcaFlag=0;
+randForFlag=0;
+svmFlag=0;
+plsFlag=1;
+mrmrFlag=1;
+
 fprintf(1,'Data Analyze now...\n');
 close all;
 
@@ -61,6 +67,8 @@ dfms=dfms(1:length(gVec),:);
 
 %% PCA.
 
+if pcaFlag
+
 [coef score]=princomp(zscore(dfms)); % Re-scale variables.
 sprintf(num2str(coef(1)));
 
@@ -104,7 +112,11 @@ biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',fnames,'obsl
 % obsHandle=h(varNum*2+1:varNum*2+obsNum);
 axis tight;
 
+end
+
 %% Random forest test.
+
+if randForFlag
 
 addpath(genpath('randFor/RF_Class_C'));
 
@@ -130,8 +142,23 @@ exopt.replace=1;
 % exopt.classwt=;
 exopt.sampsize=N-1; % Leave-one-out.
 exopt.importance=1;
+exopt.do_trace=0;
 % model = classRF_train(X_trn,Y_trn,10000,0,exopt);
-model = classRF_train(X,Y,10000,0,exopt);
+% model = classRF_train(X,Y,10000,0,exopt);
+
+maxMtry=20; % For murphy, set it to 133.
+errVec=zeros(maxMtry,1);
+for i=1:maxMtry
+    model = classRF_train(X,Y,10000,i,exopt);
+    err=model.errtr;
+    errorRate=mean(err(:,1));
+    errVec(i)=errorRate;
+    fprintf(1,'In train phase, average error rate: %g. mtry=%g.\n',errorRate,i);
+end
+[minVal idx]=min(errVec);
+fprintf(1,'The smallest error rate is %g, mtry=%g.\n',minVal,idx);
+
+model = classRF_train(X,Y,100000,idx,exopt);
 
 gini=model.importance;
 gini=gini(:,end);
@@ -215,6 +242,132 @@ colorbar;
 % set(gca,'YTick',1:10);
 % set(gca,'YTickLabel',materials,'FontSize',8);
 
+end
+
+%% SVM.
+
+if svmFlag
+    addpath('./libsvm-3.12/matlab','-begin'); % Add path to the beginning so the matlab's own svmtrain is not used.
+    
+%     dfms=zscore(dfms);
+    % Scale to [0,1].
+    mins=min(dfms);
+    dfms=dfms-repmat(mins,size(dfms,1),1);
+    maxs=max(dfms);
+    dfms=dfms./repmat(maxs,size(dfms,1),1);
+    X = dfms;
+    Y = gVec;
+    
+    [N D] =size(X);
+    sprintf(num2str(D(1)));
+    
+    bestcv = 0;
+    for log2c = -1:2:3,
+        for log2g = -4:2:1,
+            cmd = ['-q -c ', num2str(2^log2c), ' -g ', num2str(2^log2g)];
+            cv = get_cv_ac(Y, X, cmd, N);
+            if (cv > bestcv),
+                bestcv = cv; bestc = 2^log2c; bestg = 2^log2g;
+            end
+            fprintf('%g %g %g (best c=%g, g=%g, rate=%g)\n', log2c, log2g, cv, bestc, bestg, bestcv);
+        end
+    end
+    
+%     bestcv = 0;
+%     for log2c = -1:6,
+%         for log2g = -4:4,
+%             % -v option is for cross validation to choose good paramters.
+%             cmd = ['-v ' num2str(N) ' -c ', num2str(2^log2c), ' -g ', num2str(2^log2g), ' -q'];
+%             cv = svmtrain(Y,X, cmd);
+%             if (cv > bestcv),
+%                 bestcv = cv; bestc = 2^log2c; bestg = 2^log2g;
+%             end
+%             fprintf(1,'%g %g %g (best c=%g, g=%g, rate=%g)\n', log2c, log2g, cv, bestc, bestg, bestcv);
+%         end
+%     end
+    
+    % Leave-one-out cross validation.
+    % fVotes=zeros(length(fnames),1); % The first 3 votes.
+    errorRate=0;
+    tstVec=zeros(N,1);
+    hatVec=zeros(N,1);
+    for i=1:N
+        X_trn = X;
+        Y_trn = Y;
+        X_trn(i,:)=[];
+        Y_trn(i)=[];
+        X_tst = X(i,:);
+        Y_tst = Y(i);
+        cmd = [' -c ', bestc, ' -g ', bestg, ' -q'];
+        model = svmtrain(double(Y_trn),X_trn,cmd);
+        Y_hat = svmpredict(double(Y_tst),X_tst,model);
+        tstVec(i)=Y_tst;
+        hatVec(i)=Y_hat;
+        
+        er=length(find(Y_hat~=Y_tst))/length(Y_tst);
+        errorRate=errorRate+er;
+    end
+    errorRate=errorRate/N;
+    % errorRate=er/N;
+    
+    
+    fprintf(1,'Predict phase: average error rate: %g\n',errorRate);
+    C=confusionmat(tstVec,hatVec);
+    figure;
+    % aveConf=aveConf./N;
+    imagesc(C);
+    % imagesc(aveConf);
+    colorbar;
+    
+%     model = svmtrain(double(), training_instance_matrix);
+end
+
+
+if plsFlag
+    addpath('./pls/PLS','-begin');
+    
+    %     dfms=zscore(dfms);
+    % Scale to [0,1].
+%     mins=min(dfms);
+%     dfms=dfms-repmat(mins,size(dfms,1),1);
+%     maxs=max(dfms);
+%     dfms=dfms./repmat(maxs,size(dfms,1),1);
+    X = dfms;
+    Y = gVec;
+    vl=2;
+    pls_cv = plscv(X,Y,vl,'da');
+end
+
+%% mRMR.
+
+if mrmrFlag
+    addpath('./mRMR_0.9_compiled/mi_0.9','-begin');
+    addpath('./mRMR_0.9_compiled');
+
+    % Discretization into 8 levels deliminated by -3std, -2std, -1std, 0, 1std, 2std, 3std.
+    dfms=zscore(dfms);
+    temp=dfms;
+    dfms(temp<=-3)=-3;
+    temp(temp<=-3)=inf;
+    dfms(temp<=-2)=-2;
+    temp(temp<=-2)=inf;
+    dfms(temp<=-1)=-1;
+    temp(temp<=-1)=inf;
+    dfms(temp<=0)=0;
+    temp(temp<=0)=inf;
+    dfms(temp<=1)=1;
+    temp(temp<=1)=inf;
+    dfms(temp<=2)=2;
+    temp(temp<=2)=inf;
+    dfms(temp<=3)=3;
+    temp(temp<=3)=inf;
+    dfms(temp<=10000)=4;
+    
+    X = dfms;
+    Y = gVec;
+    [fea1] = mrmr_miq_d(X, Y, 9);
+    [fea2] = mrmr_mid_d(X, Y, 9);
+end
 
 %% PCA without col 1, col 11 and col 12.
 
