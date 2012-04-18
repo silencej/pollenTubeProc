@@ -2,10 +2,10 @@ function dataAnl
 
 
 pcaFlag=0;
-randForFlag=0;
+randForFlag=1;
 svmFlag=0;
-plsFlag=1;
-mrmrFlag=1;
+plsFlag=0;
+mrmrFlag=0;
 
 fprintf(1,'Data Analyze now...\n');
 close all;
@@ -146,7 +146,9 @@ exopt.do_trace=0;
 % model = classRF_train(X_trn,Y_trn,10000,0,exopt);
 % model = classRF_train(X,Y,10000,0,exopt);
 
-maxMtry=20; % For murphy, set it to 133.
+% maxMtry=50;
+% For murphy, set it to 133.
+maxMtry=D+1; % Set to the number of features + 1.
 errVec=zeros(maxMtry,1);
 for i=1:maxMtry
     model = classRF_train(X,Y,10000,i,exopt);
@@ -175,7 +177,7 @@ classErr=merr(2:end);
 fprintf(1,'In train phase, average error rate: %g\n',errorRate);
 fprintf(1,'Error rates for classes: \n');
 for i=1:length(gnames)
-    fprintf(1,'%s\t',gnames{i});
+    fprintf(1,'%s\t',strtok(gnames{i},'- '));
 end
 fprintf(1,'\n');
 fprintf(1,'%g\t',classErr);
@@ -231,16 +233,23 @@ errorRate=errorRate/N;
 % fprintf(1,'\nexample 1: error rate %f\n',   length(find(Y_hat~=Y_tst))/length(Y_tst));
 
 fprintf(1,'Predict phase: average error rate: %g\n',errorRate);
-C=confusionmat(tstVec,hatVec);
+[C order]=confusionmat(tstVec,hatVec);
+C
+classNum=length(order);
+cdNum=zeros(classNum,1); % Class data number.
+for i=1:classNum
+    cdNum(i)=length(find(tstVec==order(i)));
+end
+C=C./repmat(cdNum,1,classNum);
 figure;
 % aveConf=aveConf./N;
 imagesc(C);
 % imagesc(aveConf);
 colorbar;
-% set(gca,'XTick',1:length(X_tst));
-% set(gca,'XTickLabel',materials,'FontSize',8);
-% set(gca,'YTick',1:10);
-% set(gca,'YTickLabel',materials,'FontSize',8);
+set(gca,'XTick',1:classNum);
+set(gca,'XTickLabel',strtok(gnames,'- '),'FontSize',8);
+set(gca,'YTick',1:classNum);
+set(gca,'YTickLabel',strtok(gnames,'- '),'FontSize',8);
 
 end
 
