@@ -11,20 +11,28 @@ addpath('./frost');
 addpath('./2dNCDF');
 addpath('./anisodiff');
 
-colormap(jet);
+% colormap(jet);
 
-colormap(hot(256));
+% colormap(hot(256));
 
 
 %%
-winSize=5;
+winSize=9;
 img0=myLee(grayOri,winSize);
 
 % figure,subplot(2,2,1);
-figure, imshow(grayOri,[]);
-image(img0);
-figure, imshow(img0,[]);
-title('Lee');
+% figure, imshow(grayOri,[]);
+figure, imagesc(grayOri);
+% figure, colormap(jet); imagesc(grayOri);
+% figure, imagesc(img0);
+% figure, imshow(img0,[]);
+goRes=adapthisteq(grayOri);
+figure, imagesc(goRes);
+% figure, imshow(goRes>graythresh(goRes)*255-30);
+img0Res=adapthisteq(img0);
+figure, imagesc(img0Res);
+% figure, imshow(img0Res>graythresh(img0Res)*255-35);
+% title('Lee');
 
 % figure,imagesc(img0);
 % figure,imshow(img0,[]);
@@ -33,10 +41,17 @@ title('Lee');
 %%
 r=5;
 img1=fcnFrostFilter(grayOri,getnhood(strel('disk',r,0)));
+img1Res=adapthisteq(img1);
+figure, imagesc(img1Res);
+figure,imshow(img1Res>graythresh(img1Res)*255-15);
 
 %%
 tmax=5;
 img2 = twodncdf(grayOri, tmax);
+img2=uint8(img2);
+img2Res=adapthisteq(img2);
+figure, imagesc(img2Res);
+figure,imshow(img2Res>graythresh(img2Res)*255);
 
 %%
 

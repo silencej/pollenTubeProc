@@ -380,10 +380,12 @@ function cutFrameFcn
 
 global handles ori grayOri;
 
+addpath('./myLee');
+
 cutOriFile=[handles.filenameWoExt '.cut.png'];
 handles.useOldCrop=0;
 if handles.hasAnnoFile && exist(cutOriFile,'file')
-
+    
     infoline=sprintf('PreProc found old cut image. Use the old one?');
     choice=questdlg(infoline,'Use old cut image','Yes','No','Cancel','Yes');
     
@@ -393,14 +395,11 @@ if handles.hasAnnoFile && exist(cutOriFile,'file')
     end
     if strcmp(choice,'Yes')
         ori=imread(cutOriFile);
-%         if handles.claheFlag
-%             [grayOri rgbChan]=getGrayImg(ori); % rgbChan: rgb channel.
-%             grayOri=adapthisteq(grayOri); % CLAHE.
-%             ori(:,:,rgbChan)=grayOri;
-%         else
-            grayOri=getGrayImg(ori);
-%         end
+        grayOri=getGrayImg(ori);
         handles.useOldCrop=1;
+        
+        % Ori image enhancement.
+        enhanceProc;
         return;
     end
 end
@@ -413,7 +412,7 @@ ori=imread(handles.filename);
 %     ori(:,:,rgbChan)=grayOri;
 % else
     % Get grayOri.
-    grayOri=getGrayImg(ori);
+grayOri=getGrayImg(ori);
 % end
 
 % Thresholding and Cutting.
@@ -427,7 +426,6 @@ bw=keepLargest(bw);
 [luCorner rlCorner]=getCutFrame(bw,handles.cutMargin);
 [luCorner rlCorner]=plotCutFrame(luCorner,rlCorner);
 
-
 % handles.cutFrameThre=thre;
 handles.luCorner=luCorner;
 handles.rlCorner=rlCorner;
@@ -437,10 +435,23 @@ ori=getPart(ori,luCorner,rlCorner);
 grayOri=getGrayImg(ori);
 imwrite(ori,cutOriFile);
 
+enhanceProc;
 
 end
 
 %% Utility functions.
+
+function enhanceProc
+
+global grayOri ori;
+
+winSize=9;
+grayOri=myLee(grayOri,winSize);
+grayOri=adapthisteq(grayOri);
+grayOri=imadjust(grayOri,stretchlim(grayOri));
+ori=ind2rgb(grayOri,jet(256));
+
+end
 
 %	function bwFull=getFullBw(bw)
 %	global handles ori;
@@ -649,13 +660,13 @@ figure(handles.fH);
 bwP=bwperim(bw); % perimeter binary image.
 
 ori1=ori(:,:,1); % ori 1 layer for temp use.
-ori1(bwP)=255;
+ori1(bwP)=0;
 oriShow(:,:,1)=ori1;
 ori1=ori(:,:,2); % ori 1 layer for temp use.
-ori1(bwP)=255;
+ori1(bwP)=0;
 oriShow(:,:,2)=ori1;
 ori1=ori(:,:,3); % ori 1 layer for temp use.
-ori1(bwP)=255;
+ori1(bwP)=0;
 oriShow(:,:,3)=ori1;
 imshow(oriShow);
 end
