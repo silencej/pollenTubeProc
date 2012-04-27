@@ -183,7 +183,7 @@ handles.branchThre=ceil(branchThreInPixel*sqrt(2));
 
 if ~handles.useThinFlag
 	% % Problem: when skelVerNum==9, branch 115dic can only detect 1 branch.
-	handles.skelVerNum=13; % Skeleton Vertices number. atleast 5.
+	handles.skelVerNum=15; % Skeleton Vertices number. atleast 5.
 end
 
 
@@ -395,8 +395,8 @@ for j=1:size(bubbles,1)
 	radius=bubbles(j,3);
 	row=bubbles(j,1)-radius;
 	col=bubbles(j,2)-radius;
-	rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','c');
-	plot(col+radius,row+radius,'.c','MarkerSize',15); % plot center.
+	rectangle('Position',[col row 2*radius 2*radius],'Curvature',[1 1],'EdgeColor','r');
+	plot(col+radius,row+radius,'.r','MarkerSize',15); % plot center.
 end
 for j=1:size(tips,1)
 	radius=tips(j,3);

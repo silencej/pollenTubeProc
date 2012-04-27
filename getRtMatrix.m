@@ -6,7 +6,6 @@ function [fVec fnames rtMatrix startPoints newSkel bubbles tips lbbImg]=getRtMat
 global handles;
 
 % debugFlag=1;
-neuronFlag=1;
 
 if nargin<4
 %     widthFlag=0; % The default option is to process neurons, thus no width info.
@@ -111,7 +110,7 @@ for i=1:num
     else
         startPoints(i,3)=1;
     end
-    if neuronFlag
+    if ~pollenFlag
         fp=fp+1;
         flbdNum(fp,:)=[subMatrix(1,2) contentLen-1];
         if subMatrix(1,1)
@@ -123,7 +122,7 @@ for i=1:num
     contentPt=contentPt+contentLen;
 end
 
-if neuronFlag
+if ~pollenFlag
     flbdNum=flbdNum(flbdNum(:,1)~=0,:);
 end
 

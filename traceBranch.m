@@ -24,7 +24,7 @@ isSideBranch=0;
 
 % Bubble detection scale thre. Only bubbles with radius>coef*tubeWidth are
 % reported.
-bubbleRadCoef=2;
+bubbleRadCoef=1.5;
 
 % % branchInfo will be initialized a 7-length column vector.
 % branchInfo=zeros(7,1);
@@ -98,9 +98,26 @@ bubbleNum=length(pksS);
 branchInfo=zeros(2+2*bubbleNum,1);
 branchInfo(1)=bbWidth;
 
-[p,l]=findpeaks(bbProfile);
+% Erase all neighbours with same value, since findpeaks will not see a peak
+% like [0 1 1 0].
+bbp=bbProfile;
+for i=2:length(bbp)
+    if bbp(i)==bbp(i-1)
+        bbp(i)=bbp(i)-0.0001;
+    end
+end
+[p,l]=findpeaks(bbp);
+% p=getPeaks(bbProfile);
+% l=p(:,4);
+% p=p(:,2);
 tips=[bbSubs(l(end),:) p(end)];
 branchInfo(2)=p(end); % tip width.
+
+figure,plot(bbProfile,'-k');
+hold on;
+plot(bbProfileF,'-r');
+plot([l(end) l(end)],[0 p(end)],'-r');
+hold off;
 
 if bubbleFlag
     bubbles=zeros(bubbleNum,3);
