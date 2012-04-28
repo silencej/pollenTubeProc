@@ -17,8 +17,6 @@ addpath('./anisodiff');
 
 
 %%
-winSize=9;
-img0=myLee(grayOri,winSize);
 
 % figure,subplot(2,2,1);
 % figure, imshow(grayOri,[]);
@@ -28,6 +26,13 @@ figure, imagesc(grayOri);
 % figure, imshow(img0,[]);
 goRes=adapthisteq(grayOri);
 figure, imagesc(goRes);
+
+%%
+
+winSize=9;
+ts=tic;
+img0=myLee(grayOri,winSize);
+t0=toc(ts);
 % figure, imshow(goRes>graythresh(goRes)*255-30);
 img0Res=adapthisteq(img0);
 figure, imagesc(img0Res);
@@ -40,18 +45,23 @@ figure, imagesc(img0Res);
 
 %%
 r=5;
+ts=tic;
 img1=fcnFrostFilter(grayOri,getnhood(strel('disk',r,0)));
+% img1Res=img1;
+t1=toc(ts);
 img1Res=adapthisteq(img1);
 figure, imagesc(img1Res);
-figure,imshow(img1Res>graythresh(img1Res)*255-15);
+% figure,imshow(img1Res>graythresh(img1Res)*255-15);
 
 %%
 tmax=5;
+ts=tic;
 img2 = twodncdf(grayOri, tmax);
+t2=toc(ts);
 img2=uint8(img2);
 img2Res=adapthisteq(img2);
 figure, imagesc(img2Res);
-figure,imshow(img2Res>graythresh(img2Res)*255);
+% figure,imshow(img2Res>graythresh(img2Res)*255);
 
 %%
 
@@ -59,22 +69,33 @@ num_iter = 15;
 delta_t = 1/7;
 kappa = 30;
 option = 2;
+ts=tic;
 img3 = anisodiff2D(grayOri,num_iter,delta_t,kappa,option);
+t3=toc(ts);
+img3Res=adapthisteq(uint8(img3));
+figure, imagesc(img3Res);
 
 %%
+figure, plot([t0 t1 t2 t3]);
+set(gca,'XTick',1:4)
+set(gca,'XTickLabel',{'Lee','Frost','iNCDF','ADPM'});
+xlim([0.8 4.2]);
+ylim([-10 210]);
 
-% subplot(2,2,2);
-figure;
-image(img1);
-title('Frost');
-% subplot(2,2,3);
-figure;
-image(img2);
-title('iNCDF');
-% subplot(2,2,4);
-figure;
-image(img3);
-title('Aniso');
+
+
+% % subplot(2,2,2);
+% figure;
+% image(img1);
+% title('Frost');
+% % subplot(2,2,3);
+% figure;
+% image(img2);
+% title('iNCDF');
+% % subplot(2,2,4);
+% figure;
+% image(img3);
+% title('Aniso');
 
 
 

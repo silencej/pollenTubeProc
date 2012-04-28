@@ -302,7 +302,8 @@ else
     if ~isempty(mc)
         somaThre=mc.somaThre;
     else
-        somaThre=graythresh(grayOri)*255;
+%         somaThre=graythresh(grayOri)*255;
+        somaThre=max(grayOri(:))*0.8;
     end
     bw=applyThre(somaThre);
 
