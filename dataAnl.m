@@ -1,8 +1,8 @@
 function dataAnl
 
 
-pcaFlag=0;
-randForFlag=1;
+pcaFlag=1;
+randForFlag=0;
 svmFlag=0;
 plsFlag=0;
 mrmrFlag=0;
