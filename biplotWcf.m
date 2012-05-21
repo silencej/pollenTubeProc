@@ -61,6 +61,9 @@ function h = biplotWcf(coefs,gVec,gNames,varargin)
 %   Copyright 1993-2009 The MathWorks, Inc. 
 %   $Revision: 1.1.6.10 $ $Date: 2009/05/07 18:30:20 $
 
+
+fontsize=16;
+
 % Choose whether the datatip can attach to Axes or Variable lines.
 cursorOnAxes = false;
 cursorOnVars = true;
@@ -106,6 +109,7 @@ else
 end
 
 cax = newplot;
+set(gca,'FontUnits','points','FontSize',fontsize);
 dataCursorBehaviorObj = hgbehaviorfactory('DataCursor');
 set(dataCursorBehaviorObj,'UpdateFcn',@biplotDatatipCallback);
 disabledDataCursorBehaviorObj = hgbehaviorfactory('DataCursor');
@@ -165,9 +169,9 @@ if ~isempty(varlabs)
     end
 
     if in3D
-        varTxtHndl = text(coefs(:,1)+delx,coefs(:,2)+dely,coefs(:,3)+delz,varlabs,'FontUnits','points','FontSize',12); % The fontsize has no effect on Matlab Linux.
+        varTxtHndl = text(coefs(:,1)+delx,coefs(:,2)+dely,coefs(:,3)+delz,varlabs,'FontUnits','points','FontSize',fontsize);
     else
-        varTxtHndl = text(coefs(:,1)+delx,coefs(:,2)+dely,varlabs,'Interpreter','none','FontUnits','points','FontSize',12);
+        varTxtHndl = text(coefs(:,1)+delx,coefs(:,2)+dely,varlabs,'Interpreter','none','FontUnits','points','FontSize',fontsize);
     end
     set(varTxtHndl,'tag','varlabel');
 end
@@ -318,7 +322,9 @@ if gNum>=6
     set(obsHndl(gVec==6),'Color','y','Marker','o','MarkerFaceColor','y');
     legendH(6)=obsHndl(find(gVec==6,1));
 end
-legend(legendH,gNames);
+hl=legend(legendH,gNames,'fontSize',fontsize);
+shrinkFact=fontsize/10;
+shrinkLegend(hl, shrinkFact);
 % axis tight;
 
 %
