@@ -165,9 +165,9 @@ if ~isempty(varlabs)
     end
 
     if in3D
-        varTxtHndl = text(coefs(:,1)+delx,coefs(:,2)+dely,coefs(:,3)+delz,varlabs);
+        varTxtHndl = text(coefs(:,1)+delx,coefs(:,2)+dely,coefs(:,3)+delz,varlabs,'FontUnits','points','FontSize',12); % The fontsize has no effect on Matlab Linux.
     else
-        varTxtHndl = text(coefs(:,1)+delx,coefs(:,2)+dely,varlabs,'Interpreter','none');
+        varTxtHndl = text(coefs(:,1)+delx,coefs(:,2)+dely,varlabs,'Interpreter','none','FontUnits','points','FontSize',12);
     end
     set(varTxtHndl,'tag','varlabel');
 end
