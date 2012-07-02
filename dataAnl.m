@@ -105,9 +105,25 @@ figure;
 title('biplot of PCA');
 % 
 % fnames={'psArea', 'bbLen', 'bbChildNum', 'flBrNum', 'sbPos', 'sbLen', 'bbWidth', 'bbTipWidth', 'sbWidth', 'sbTipWidth', 'bubbleNum', 'lbRad'};
-% biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',num2str((1:12)'),'obslabels',obs);
-biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',fnames,'obslabels',obs);
+% biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',num2s
+% tr((1:12)'),'obslabels',obs);
 
+% Don't plot all var vectors if the number is larger than varThre.
+varThre=30;
+if length(fnames)<varThre
+    biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',fnames,'obslabels',obs);
+else
+    % Don't plot var labels if too much.
+    
+%     % Only plot the most longest variable vectors.
+%     coefs=coef(:,1).^2+coef(:,2).^2;
+%     [coefs idx]=sort(coefs,'descend');
+%     sprintf(num2str(coefs(1)));
+%     idx=idx(1:varThre);
+%     biplotWcf(coef(idx,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels'
+%     ,fnames(idx),'obslabels',obs);
+    biplotWcf(coef(:,1:2),gVec,gnames,'scores',score(:,1:2),'varlabels',{},'obslabels',obs);
+end
 % obsNum=size(dfms,1);
 % obsHandle=h(varNum*2+1:varNum*2+obsNum);
 axis tight;
