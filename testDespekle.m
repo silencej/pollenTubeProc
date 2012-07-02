@@ -1,22 +1,59 @@
 function testDespekle
 
+% img=imread('../data/129-12.cut.png');
+
+% grayOri=getGrayImg(img);
+
+
+%%
+
 close all;
 
-img=imread('../data/yangzhi/129-12.cut.png');
-
+img=imread('../data/129-12.cut.png');
 grayOri=getGrayImg(img);
 
-addpath('./myLee');
-addpath('./frost');
-addpath('./2dNCDF');
-addpath('./anisodiff');
+figure, imshow(grayOri);
+saveas(gca,'129-12CutGray.eps');
+figure, imhist(grayOri);
+ylim([0,2*10^5]);
+saveas(gca,'129-12CutGrayHist.eps');
+gray2=adapthisteq(grayOri);
+figure, imshow(gray2);
+saveas(gca,'129-12CutClahe.eps');
+figure, imhist(gray2);
+ylim([0,7*10^4]);
+saveas(gca,'129-12CutClaheHist.eps');
+
+close all;
+
+%%
+
+close all;
+
+img=imread('../data/129-12.cut.png');
+grayOri=getGrayImg(img);
+
+% colormap(jet(256));
+
+gray1=imadjust(grayOri,stretchlim(grayOri,0));
+% figure,imhist(gray1);
+figure,imshow(gray1);
+saveas(gca,'129-12CutLM.eps','epsc');
+figure,imagesc(gray1);
+saveas(gca,'129-12CutLMSc.eps');
+figure,imagesc(histeq(grayOri));
+saveas(gca,'129-12CutHisteq.eps','epsc');
+figure, imagesc(adapthisteq(grayOri));
+% Clahe pseducolor.
+saveas(gca,'129-12CutClaheSc.eps','epsc');
+
+close all;
+
+%%
 
 % colormap(jet);
 
 % colormap(hot(256));
-
-
-%%
 
 % figure,subplot(2,2,1);
 % figure, imshow(grayOri,[]);
@@ -28,6 +65,8 @@ goRes=adapthisteq(grayOri);
 figure, imagesc(goRes);
 
 %%
+
+addpath('./myLee');
 
 winSize=9;
 ts=tic;
@@ -44,6 +83,8 @@ figure, imagesc(img0Res);
 % figure,image(img0);
 
 %%
+addpath('./frost');
+
 r=5;
 ts=tic;
 img1=fcnFrostFilter(grayOri,getnhood(strel('disk',r,0)));
@@ -54,6 +95,9 @@ figure, imagesc(img1Res);
 % figure,imshow(img1Res>graythresh(img1Res)*255-15);
 
 %%
+
+addpath('./2dNCDF');
+
 tmax=5;
 ts=tic;
 img2 = twodncdf(grayOri, tmax);
@@ -64,6 +108,8 @@ figure, imagesc(img2Res);
 % figure,imshow(img2Res>graythresh(img2Res)*255);
 
 %%
+
+addpath('./anisodiff');
 
 num_iter = 15;
 delta_t = 1/7;
