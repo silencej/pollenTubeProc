@@ -13,16 +13,16 @@ img=imread('../data/129-12.cut.png');
 grayOri=getGrayImg(img);
 
 figure, imshow(grayOri);
-saveas(gca,'129-12CutGray.eps');
+saveas(gca,'129-12CutGray.eps','epsc');
 figure, imhist(grayOri);
 ylim([0,2*10^5]);
-saveas(gca,'129-12CutGrayHist.eps');
+saveas(gca,'129-12CutGrayHist.eps','epsc');
 gray2=adapthisteq(grayOri);
 figure, imshow(gray2);
-saveas(gca,'129-12CutClahe.eps');
+saveas(gca,'129-12CutClahe.eps','epsc');
 figure, imhist(gray2);
 ylim([0,7*10^4]);
-saveas(gca,'129-12CutClaheHist.eps');
+saveas(gca,'129-12CutClaheHist.eps','epsc');
 
 close all;
 
@@ -40,7 +40,7 @@ gray1=imadjust(grayOri,stretchlim(grayOri,0));
 figure,imshow(gray1);
 saveas(gca,'129-12CutLM.eps','epsc');
 figure,imagesc(gray1);
-saveas(gca,'129-12CutLMSc.eps');
+saveas(gca,'129-12CutLMSc.eps','epsc');
 figure,imagesc(histeq(grayOri));
 saveas(gca,'129-12CutHisteq.eps','epsc');
 figure, imagesc(adapthisteq(grayOri));
