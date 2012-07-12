@@ -1,6 +1,6 @@
 function testDespekle
 
-% img=imread('../data/129-12.cut.png');
+% img=imread('../data/test/129-12.cut.png');
 
 % grayOri=getGrayImg(img);
 
@@ -9,7 +9,7 @@ function testDespekle
 
 close all;
 
-img=imread('../data/129-12.cut.png');
+img=imread('../data/test/129-12.cut.png');
 grayOri=getGrayImg(img);
 
 figure, imshow(grayOri);
@@ -30,7 +30,7 @@ close all;
 
 close all;
 
-img=imread('../data/129-12.cut.png');
+img=imread('../data/test/129-12.cut.png');
 grayOri=getGrayImg(img);
 
 % colormap(jet(256));
@@ -129,6 +129,68 @@ xlim([0.8 4.2]);
 ylim([-10 210]);
 
 
+%%
+% Lee + CLAHE
+% CLAHE + Lee
+
+addpath('./myLee');
+
+close all;
+
+img=imread('../data/test/129-12.cut.png');
+grayOri=getGrayImg(img);
+
+winSize=9;
+% ts=tic;
+img0=myLee(grayOri,winSize);
+% t0=toc(ts);
+% figure, imshow(goRes>graythresh(goRes)*255-30);
+leeClahe=adapthisteq(img0);
+
+figure, imagesc(leeClahe);
+saveas(gca,'leeClahe.eps','epsc');
+% print(gcf, '-depsc2','-r300','leeClahePrint.eps');
+
+img0=adapthisteq(grayOri);
+claheLee=myLee(img0,winSize);
+
+figure, imagesc(claheLee);
+saveas(gca,'claheLee.eps','epsc');
+
+
+%%
+% HE+Lee vs CLAHE+Lee
+
+addpath('./myLee');
+
+close all;
+
+img=imread('../data/test/129-12.cut.png');
+grayOri=getGrayImg(img);
+
+winSize=9;
+img0=myLee(grayOri,winSize);
+leeClahe=adapthisteq(img0);
+leeHe=histeq(img0);
+% heLee=histeq(grayOri);
+% heLee=myLee(heLee,winSize);
+
+figure, imagesc(leeClahe);
+saveas(gca,'leeClahe.eps','epsc');
+figure, imshow(leeClahe>=graythresh(leeClahe)*255);
+saveas(gca,'leeClaheOtsu.eps','epsc');
+figure, imagesc(leeHe);
+saveas(gca,'leeHe.eps','epsc');
+figure, imshow(leeHe>=graythresh(leeHe)*255);
+saveas(gca,'leeHeOtsu.eps','epsc');
+figure, imshow(grayOri>=graythresh(grayOri)*255);
+saveas(gca,'oriOtsu.eps','epsc');
+
+% figure, imagesc(heLee);
+% saveas(gca,'heLee.eps','epsc');
+
+
+%%
 
 % % subplot(2,2,2);
 % figure;
