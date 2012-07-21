@@ -49,8 +49,8 @@ end
 close all;
 
 if flag==4
-    bw=imread('../data/test/129-12.bw.png');
-    skelResISAT=bwmorph(bw,'thin',inf);
+    bwISAT=imread('../data/test/129-12.bw.png');
+    skelResISAT=bwmorph(bwISAT,'thin',inf);
     img=imread('../data/test/129-12.cut.png');
     bw=img(:,:,2)>66;
     bw=keepLargest(bw);
@@ -60,9 +60,9 @@ if flag==4
     skelRes=bwmorph(bw,'thin',inf);
     nameStr='Neuron';
 elseif flag==3
-    bw=imread('../data/test/2575 DIC115.bw.png');
+    bwISAT=imread('../data/test/2575 DIC115.bw.png');
     addpath(genpath('BaiSkeletonPruningDCE/'));
-    skelResISAT=div_skeleton_new(4,1,1-bw,13);
+    skelResISAT=div_skeleton_new(4,1,1-bwISAT,13);
     skelResISAT=skelResISAT~=0;
     img=imread('../data/test/2575 DIC115.cut.png');
     bw=img(:,:,2)>45;
@@ -71,10 +71,15 @@ elseif flag==3
     bw=imclose(bw,strel('disk',5));
     bw=imfill(bw,'holes');
     skelRes=div_skeleton_new(4,1,1-bw,13);
-    skelRes=skelRes~=skelRes;
+    skelRes=skelRes~=0;
+    figure,imshow(skelRes);
+%     skelRes=bwmorph(bw,'skel',inf);
+%     figure,imshow(skelRes);
     nameStr='Pollen';
 end
 
+figure,imshow(bwISAT);
+saveas(gca,['ISATBw' nameStr '.eps'],'epsc');
 figure,imshow(bw);
 saveas(gca,['noISATBw' nameStr '.eps'],'epsc');
 plotRes(img,skelRes);
