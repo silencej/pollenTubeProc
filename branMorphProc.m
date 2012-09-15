@@ -324,6 +324,8 @@ end
 
 % skel=(skel~=0); % Convert the uint8 to logical.
 skel=parsiSkel(skel);
+% Set all windhole centers to 1.
+skel=imfill(skel,4,'holes');
 	
 % Save skeleton img.
 imwrite(skel,skelFile,'png');

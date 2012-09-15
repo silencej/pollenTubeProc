@@ -37,12 +37,17 @@ ep=sp; % If sp is an isolated point, ep=sp.
 % over before breaking the loop.
 isEndPoint=1;
 
-while (size(nbr1,1)==1 && nbr1(1)~=0) || size(nbr1,1)==2 % normal point will have 1 8-nbr since the previous one is filled!
+while (size(nbr1,1)==1 && nbr1(1)~=0) || size(nbr1,1)==2 || size(nbr1,1)==3
+    % normal point will have 1 8-nbr since the previous one is filled!
 	% nbr1 has 2-rows indicates there may be a Ren-shape (i.e. the present pos is
 	% (1,2) or (2,3) at below. If the path is (3,1)->(2,2), then it comes to be a joint.
 	%1  @
 	%2  @@
 	%3 @
+    % If nbr1 has 3 rows, it means the "windhole" is met.
+    %1   @
+    %2  @#@
+    %3   @
 	
 	% Ren Shape. The first 4-nbr, e.g. the Ren-shape center, will be the ep.
 	if size(nbr1,1)==2 && abs(nbr1(1,1)-nbr1(2,1))+abs(nbr1(1,2)-nbr1(2,2))==1
@@ -56,16 +61,30 @@ while (size(nbr1,1)==1 && nbr1(1)~=0) || size(nbr1,1)==2 % normal point will hav
 	end
 
 	% Joint. ep=previous one.
-	if size(nbr1,1)==2 && abs(nbr1(1,1)-nbr1(2,1))+abs(nbr1(1,2)-nbr1(2,2))~=1;
-		% A joint is met. It could be
+    if size(nbr1,1)==2 && abs(nbr1(1,1)-nbr1(2,1))+abs(nbr1(1,2)-nbr1(2,2))~=1;
+        % A joint is met. It could be
         % First Case:
-		%1 @ @
-		%2  @
-		%3 @
+        %1 @ @
+        %2  @
+        %3 @
         % Second Case: a (3,1)->(2,2) condition in the Ren-Shape case.
         isEndPoint=0;
-		break;
-	end
+        break;
+    end
+    
+    % Windhole.
+    % Return the pos of center of windhole as ep. Then in
+    % decomposeSkel->getDistmat->findVertices all the ep's nbrs will be set to
+    % 0 first.
+    if size(nbr1,1)==3
+        len=len+1;
+        ep=nbr1(1,:); % center of windhole.
+        isEndPoint=0;
+        break;
+%         gImg(nbr1(1,1),nbr1(1,2))=0;
+%         gImg(nbr1(2,1),nbr1(2,2))=0;
+%         gImg(nbr1(3,1),nbr1(3,2))=0;
+    end
 	
 	if isNbr4
 		len=len+1;

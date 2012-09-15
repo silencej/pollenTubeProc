@@ -87,8 +87,11 @@ end
 % thre=median(bbProfile);
 % thre=min(handles.bubbleRadCoef*bbWidth,grain(3));
 thre=bubbleRadCoef*bbWidth;
-locs=locs(pks>thre);
-pks=pks(pks>thre);
+% locs=locs(pks>thre);
+% pks=pks(pks>thre);
+% pks=pks(bbProfile(locs)>thre);
+locs=locs(bbProfile(locs)>thre);
+pks=bbProfile(locs);
 
 % pksS - sorted.
 [pksS I]=sort(pks,'descend');
