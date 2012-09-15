@@ -2,7 +2,7 @@ function dataAnl
 
 
 pcaFlag=1;
-randForFlag=0;
+randForFlag=1;
 svmFlag=0;
 plsFlag=0;
 mrmrFlag=0;

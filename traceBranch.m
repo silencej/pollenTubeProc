@@ -24,7 +24,7 @@ isSideBranch=0;
 
 % Bubble detection scale thre. Only bubbles with radius>coef*tubeWidth are
 % reported.
-bubbleRadCoef=1.5;
+bubbleRadCoef=1.8;
 
 % % branchInfo will be initialized a 7-length column vector.
 % branchInfo=zeros(7,1);
