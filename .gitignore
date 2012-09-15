@@ -6,7 +6,8 @@
 path.hist
 *.tiff
 *.tif
-*.png
+#*.png
 *.fig
+*.eps
 adaptivethreshold
-
+Thumbs.db
