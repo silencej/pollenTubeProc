@@ -62,8 +62,8 @@ delta_mad = mad(d_1,1) / .6745; % mad(x,1) for median absolute value. mad(x,0) f
 % From Matlab Doc of mad function:
 % different scale estimates: std < mean absolute < median absolute (< stands for worse than in robustness).
 % For normally distributed data, multiply mad by one of the following factors to obtain an estimate of the normal scale parameter Ïƒ, e.g. std:
-% sigma = 1.253*mad(X,0) â€” For mean absolute deviation
-% sigma = 1.4826*mad(X,1) â€” For median absolute deviation
+% sigma = 1.253*mad(X,0) â€?For mean absolute deviation
+% sigma = 1.4826*mad(X,1) â€?For median absolute deviation
 % 1.4826*0.6745=1
 
 % The threshold is different from Dohono1995's - thre = delta * sqrt(2*logn/n). But the original is thre = delta * sqrt(logn). I think it's wrong.
@@ -206,6 +206,11 @@ end
 
 deblurWinLen=25; % unit: points.
 for i=1:length(locs)-1
+    % If locs doesn't change, then locs is zeros(2,1). Or there is only 1
+    % peak, then locs(2)==0.
+    if ~locs(i) || ~locs(i+1)
+        break;
+    end
 	if locs(i+1)-locs(i)<deblurWinLen
 		if x_out(locs(i+1))>x_out(locs(i))
 			locs(i)=0;
@@ -216,6 +221,7 @@ for i=1:length(locs)-1
 		peakNum=peakNum-1;
 	end
 end
+
 locs=locs(locs~=0);
 peaks=xOri(locs);
 
