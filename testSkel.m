@@ -13,6 +13,7 @@ elseif flag==1
 end
 % grayOri=getGrayImg(img);
 
+if flag==2 || flag==1
 tic;
 thinRes=bwmorph(bw,'thin',inf);
 t1=toc;
@@ -38,6 +39,53 @@ xlabel('Methods');
 ylabel('Time (s)');
 set(gca,'xticklabel',{'Thinning','MA','Bai''s method'});
 saveas(gca,['skelTime' nameStr '.eps'],'epsc');
+
+return;
+
+end
+
+%% Skel with or W/O ISAT.
+
+close all;
+
+if flag==4
+    bwISAT=imread('../data/test/129-12.bw.png');
+    skelResISAT=bwmorph(bwISAT,'thin',inf);
+    img=imread('../data/test/129-12.cut.png');
+    bw=img(:,:,2)>66;
+    bw=keepLargest(bw);
+    bw=imopen(bw,strel('disk',1));
+    bw=imclose(bw,strel('disk',5));
+    bw=imfill(bw,'holes');
+    skelRes=bwmorph(bw,'thin',inf);
+    nameStr='Neuron';
+elseif flag==3
+    bwISAT=imread('../data/test/2575 DIC115.bw.png');
+    addpath(genpath('BaiSkeletonPruningDCE/'));
+    skelResISAT=div_skeleton_new(4,1,1-bwISAT,13);
+    skelResISAT=skelResISAT~=0;
+    img=imread('../data/test/2575 DIC115.cut.png');
+    bw=img(:,:,2)>45;
+    bw=keepLargest(bw);
+    bw=imopen(bw,strel('disk',1));
+    bw=imclose(bw,strel('disk',5));
+    bw=imfill(bw,'holes');
+    skelRes=div_skeleton_new(4,1,1-bw,13);
+    skelRes=skelRes~=0;
+    figure,imshow(skelRes);
+%     skelRes=bwmorph(bw,'skel',inf);
+%     figure,imshow(skelRes);
+    nameStr='Pollen';
+end
+
+figure,imshow(bwISAT);
+saveas(gca,['ISATBw' nameStr '.eps'],'epsc');
+figure,imshow(bw);
+saveas(gca,['noISATBw' nameStr '.eps'],'epsc');
+plotRes(img,skelRes);
+saveas(gca,['noISATRes' nameStr '.eps'],'epsc');
+plotRes(img,skelResISAT);
+saveas(gca,['ISATRes' nameStr '.eps'],'epsc');
 
 end
 

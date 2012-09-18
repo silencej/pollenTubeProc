@@ -418,7 +418,12 @@ grayOri=getGrayImg(ori);
 
 % Thresholding and Cutting.
 if isempty(handles.cutFrameThre) || ~handles.cutFrameThre
-    handles.cutFrameThre=graythresh(grayOri)*255;
+%     % Check if the input is binary mask image.
+%     if islogical(grayOri)
+%         handles.cutFrameThre=0;
+%     else
+        handles.cutFrameThre=graythresh(grayOri)*255;
+%     end
 end
 bw=(grayOri>handles.cutFrameThre);
 bw=imfill(bw,'holes');

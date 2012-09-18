@@ -323,8 +323,8 @@ if gNum>=6
     legendH(6)=obsHndl(find(gVec==6,1));
 end
 hl=legend(legendH,gNames,'fontSize',fontsize);
-shrinkFact=fontsize/10;
-shrinkLegend(hl, shrinkFact);
+% shrinkFact=fontsize/10;
+% shrinkLegend(hl, shrinkFact);
 % axis tight;
 
 %

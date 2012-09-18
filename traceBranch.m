@@ -24,7 +24,7 @@ isSideBranch=0;
 
 % Bubble detection scale thre. Only bubbles with radius>coef*tubeWidth are
 % reported.
-bubbleRadCoef=1.5;
+bubbleRadCoef=1.8;
 
 % % branchInfo will be initialized a 7-length column vector.
 % branchInfo=zeros(7,1);
@@ -87,8 +87,11 @@ end
 % thre=median(bbProfile);
 % thre=min(handles.bubbleRadCoef*bbWidth,grain(3));
 thre=bubbleRadCoef*bbWidth;
-locs=locs(pks>thre);
-pks=pks(pks>thre);
+% locs=locs(pks>thre);
+% pks=pks(pks>thre);
+% pks=pks(bbProfile(locs)>thre);
+locs=locs(bbProfile(locs)>thre);
+pks=bbProfile(locs);
 
 % pksS - sorted.
 [pksS I]=sort(pks,'descend');
