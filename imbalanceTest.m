@@ -13,7 +13,7 @@ load(wildtypeFile,'dfm','obfile','fnames','-mat');
 % gVec=inf(50,1); % group id vector.
 % obs=cell(1,1); % observation file names.
 % gNum=length(files);
-% gnames=cell(gNum,1); % group names.
+gnames=cell(2,1); % group names.
 % fnames='';
 % load(files{1},'dfm','obfile','fnames','-mat');
 
@@ -27,7 +27,7 @@ wtDfm=dfm;
 
 % [pathname filename extname]=fileparts(wildtypeFile);
 % sprintf([pathname extname]);
-% gnames(1)={'Wildtype'};
+gnames(1)={'Wildtype'};
 % dfmsPt=dfmNum;
 
 files=getImgFileNames('*.dfm');
@@ -37,7 +37,7 @@ end
 
 for k=1:length(files)
     load(files{k},'dfm','obfile','-mat');
-    dfm=dfm(1:2,:);
+    dfm=dfm(1:3,:);
     dfms=[wtDfm; dfm];
     gVec=ones(size(wtDfm,1)+size(dfm,1),1);
     gVec(size(wtDfm,1)+1:end)=2;
@@ -51,7 +51,7 @@ for k=1:length(files)
 
     [pathname filename extname]=fileparts(files{k});
     sprintf([pathname extname]);
-    gname={filename};
+    gnames(2)={filename};
 
     % gVec=gVec(gVec~=inf);
 % dfms=dfms(1:length(gVec),:);
@@ -114,9 +114,9 @@ errorRate=merr(1);
 classErr=merr(2:end);
 fprintf(1,'In train phase, average error rate: %g\n',errorRate);
 fprintf(1,'Error rates for classes: \n');
-% for i=1:length(gname)
-    fprintf(1,'%s\t',strtok(gname,'- '));
-% end
+for i=1:length(gnames)
+    fprintf(1,'%s\t',strtok(gnames{i},'- '));
+end
 fprintf(1,'\n');
 fprintf(1,'%g\t',classErr);
 fprintf(1,'\n');
