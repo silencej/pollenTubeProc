@@ -10,25 +10,23 @@ dfm=0;
 wildtypeFile='simuPollens/allWildtype.dfm';
 load(wildtypeFile,'dfm','obfile','fnames','-mat');
 
-% gVec=inf(50,1); % group id vector.
-% obs=cell(1,1); % observation file names.
-% gNum=length(files);
-gnames=cell(2,1); % group names.
-% fnames='';
-% load(files{1},'dfm','obfile','fnames','-mat');
+gVec=inf(50,1); % group id vector.
 
-% varNum=size(dfm,2);
-% dfms=inf(50,varNum);
-% dfmNum=size(dfm,1);
-% dfms(1:dfmNum,:)=dfm;
-% gVec(1:dfmNum)=1;
-% obs(1:dfmNum)=obfile;
-wtDfm=dfm;
+% gnames=cell(2,1); % group names.
+gnames=cell(6,1); % group names.
+
+varNum=size(dfm,2);
+dfms=inf(50,varNum);
+dfmNum=size(dfm,1);
+dfms(1:dfmNum,:)=dfm;
+gVec(1:dfmNum)=1;
+
+% wtDfm=dfm;
 
 % [pathname filename extname]=fileparts(wildtypeFile);
 % sprintf([pathname extname]);
 gnames(1)={'Wildtype'};
-% dfmsPt=dfmNum;
+dfmsPt=dfmNum;
 
 files=getImgFileNames('*.dfm');
 if isempty(files)
@@ -38,23 +36,28 @@ end
 for k=1:length(files)
     load(files{k},'dfm','obfile','-mat');
     dfm=dfm(1:3,:);
-    dfms=[wtDfm; dfm];
-    gVec=ones(size(wtDfm,1)+size(dfm,1),1);
-    gVec(size(wtDfm,1)+1:end)=2;
+%     obfile=obfile(1:3,:);
     
-%     dfmNum=size(dfm,1);
-%     dfms(dfmsPt+1:dfmsPt+dfmNum,:)=dfm;
-%     gVec(dfmsPt+1:dfmsPt+dfmNum)=i;
+%     dfms=[wtDfm; dfm];
+%     gVec=ones(size(wtDfm,1)+size(dfm,1),1);
+%     gVec(size(wtDfm,1)+1:end)=2;
+    
+    dfmNum=size(dfm,1);
+    dfms(dfmsPt+1:dfmsPt+dfmNum,:)=dfm;
+    gVec(dfmsPt+1:dfmsPt+dfmNum)=k+1;
 %     obs(dfmsPt+1:dfmsPt+dfmNum)=obfile;
-    % Comment the following line to make dfmsPt constant.
-%     dfmsPt=dfmsPt+dfmNum;
+    dfmsPt=dfmsPt+dfmNum;
 
     [pathname filename extname]=fileparts(files{k});
     sprintf([pathname extname]);
-    gnames(2)={filename};
+%     gnames(2)={filename};
+    gnames(k+1)={filename};
+    
+end
 
-    % gVec=gVec(gVec~=inf);
-% dfms=dfms(1:length(gVec),:);
+gVec=gVec(gVec~=inf);
+dfms=dfms(1:length(gVec),:);
+
 
 %%
 
@@ -190,6 +193,6 @@ set(gca,'YTick',1:classNum);
 set(gca,'YTickLabel',strtok(gnames,'- '),'FontSize',8);
 
 
-end
+% end
 
 end
