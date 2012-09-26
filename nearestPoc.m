@@ -1,9 +1,13 @@
-function [dis,npiv]=nearestPoc(spv,curve,scale); % Nearest point on curve.
+function [dis,npiv]=nearestPoc(spv,curve,scale) % Nearest point on curve.
 % spv: start point vector.
 % curve: the target curve.
 % The function finds for each point in spv its nearest point on the curve, returns the distance in dis, and the index of the nearest point in the curve. So length(dis)==length(npiv)==size(spv,1)~=size(curve,1).
 
 % npiv=zeros(length(x)-2*r,1);
+
+if nargin<3
+    scale=20;
+end
 
 sr=20; % Search radius on curve. Default in 20X scale.
 sr=scale/20*sr;
