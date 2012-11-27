@@ -1,0 +1,15 @@
+bin/
+demo/
+features/
+matlab/.#ml_featset.m.1.19
+matlab/.#ml_features.m.1.9
+matlab/ml_Znl.mexglx
+matlab/ml_hitmiss.mexglx
+matlab/ml_moments_1.mexglx
+matlab/ml_texture.mexglx
+source/cvip_pgmtexture.o
+source/ml_Znl.mexglx
+source/ml_hitmiss.mexglx
+source/ml_moments_1.mexglx
+source/ml_texture.mexglx
+
