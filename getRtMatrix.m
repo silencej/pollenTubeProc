@@ -363,14 +363,17 @@ else
     wavyPkThre=5; % Default ther in 20X scale.
     wavyPkThre=wavyPkThre*handles.scale/20;
     wavyNum=length(find(pks>wavyPkThre));
+    sprintf(num2str(size(locs,1)));
 %     if 1
-        pLocs=find(pks>wavyPkThre);
-        figure('name','Wavy Points Picked'),plot(x,y,'-k');
-        hold on;
-        plot(xs,ys);
-        plot(x(locs(pLocs)),y(locs(pLocs)),'or');
-        plot(xs(npiv(locs(pLocs))),ys(npiv(locs(pLocs))),'.r');
-        legend('Original Curve','Center Line','Wavy Point','Correspond Point on Center line');
+%         pLocs=find(pks>wavyPkThre);
+%         figure('name','Wavy Points Picked'),axis equal, plot(x,y,'-k');
+%         hold on;
+%         plot(xs,ys);
+%         plot(x(locs(pLocs)),y(locs(pLocs)),'or');
+%         plot(xs(npiv(locs(pLocs))),ys(npiv(locs(pLocs))),'.r');
+%         xlabel('Image pixel');
+%         ylabel('Image pixel');
+%         legend('Original Curve','Center Line','Wavy Point','Correspond Point on Center line');
 %     end
 end
 
