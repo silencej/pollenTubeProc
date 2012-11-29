@@ -4,11 +4,21 @@ function segPollen
 fprintf(1,'===============\nsegPollen starts...\n');
 close all;
 
-pgThre=0.5;
+pgThre=0.6;
 r=1;
 imgThre=1600;
 
 img=imread('../../data/guanPollen/G4-4 L.tif');
+% img=imread('../../data/guanPollen/ren1-3 point5nM.tif');
+
+
+[px,py] = gradient(double(img));
+grad=sqrt(px.^2+py.^2);
+% figure,imshow(grad,[]);
+% contour(v,v,img), hold on, 
+% figure;
+% quiver(px,py);
+pgBw=grad>300;
 
 figure;
 imshow(img,[]);
@@ -47,8 +57,9 @@ mfmInd=find(mFm);
 clear tm fm tallMask flatMask mTm mFm;
 delete(ellipH);
 
-pgBw=img<imgThre; % Pollen grain bw.
+% pgBw=img<imgThre; % Pollen grain bw.
 % pgBw2=pgBw; % Save a copy
+
 
 close all;
 figure;
