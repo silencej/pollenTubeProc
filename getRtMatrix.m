@@ -312,7 +312,7 @@ end
 
 % fVec(13)=fVec(8)/fVec(7);
 widthRatio=bbTipWidth/bbWidth;
-bbInt=double(grayOri(lbbSubs));
+bbInt=double(grayOri(sub2ind(size(grayOri),lbbSubs(:,1),lbbSubs(:,2))));
 bbIntStd=std(bbInt(:));
 somaIntAvg=sum(sum(uint8(somabw).*grayOri))/sum(sum(somabw)); % Soma/grain intensity average.
 nonSomabw=bw-(bw&somabw);
