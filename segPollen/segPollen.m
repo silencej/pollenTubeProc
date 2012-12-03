@@ -48,6 +48,7 @@ clear tm fm tallMask flatMask mTm mFm;
 delete(ellipH);
 
 pgBw=img<imgThre; % Pollen grain bw.
+% pgBw=edge(img,'Canny');
 % pgBw2=pgBw; % Save a copy
 
 close all;
