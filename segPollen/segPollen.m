@@ -8,7 +8,8 @@ pgThre=0.6;
 r=1;
 imgThre=1600;
 
-img=imread('../../data/guanPollen/G4-4 L.tif');
+% img=imread('../../data/guanPollen/G4-4 L.tif');
+img=imread('../../data/guanPollen/G11-1.tif');
 % img=imread('../../data/guanPollen/ren1-3 point5nM.tif');
 
 
