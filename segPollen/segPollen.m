@@ -12,14 +12,31 @@ imgThre=1600;
 img=imread('../../data/guanPollen/G11-1.tif');
 % img=imread('../../data/guanPollen/ren1-3 point5nM.tif');
 
+ori=img;
+img=imcomplement(img);
 
-[px,py] = gradient(double(img));
-grad=sqrt(px.^2+py.^2);
-% figure,imshow(grad,[]);
-% contour(v,v,img), hold on, 
-% figure;
-% quiver(px,py);
-pgBw=grad>300;
+% [px,py] = gradient(double(img));
+% grad=sqrt(px.^2+py.^2);
+% % figure,imshow(grad,[]);
+% % contour(v,v,img), hold on, 
+% % figure;
+% % quiver(px,py);
+% pgBw=grad>300;
+
+
+% Background substraction by rolling ball algorithm.
+
+% img(img<62800)=62800;
+% figure,imshow(img,[]);
+% % bg=imopen(img,strel('ball',50,1000,8));
+% bg=imopen(img,strel('ball',50,62000,8));
+% img2=img-bg;
+% img2=adapthisteq(imadjust(img2));
+% % img3=imfill(img2,'holes');
+% ed=edge(img2,'canny');
+% figure,imshow(ed);
+
+%%
 
 figure;
 imshow(img,[]);
@@ -31,41 +48,51 @@ api=iptgetapi(ellipH);
 elliPos=api.getPosition(); % Returns top-left position and Axial lengths: [x y Dhorizontal Dvertical].
 Dl=elliPos(3);
 Ds=elliPos(4);
+% Circular window radium.
 if Dl<Ds
-    temp=Dl;
-    Dl=Ds;
-    Ds=temp;
+    cwr=ceil(Ds/2);
+else
+    cwr=ceil(Dl/2);
 end
+% if Dl<Ds
+%     temp=Dl;
+%     Dl=Ds;
+%     Ds=temp;
+% end
 fprintf(1,'Specify pollen grain finished.\n');
 
-% Example pixel: [erow ecol]; Used to keep the mother masks. The reference
-% pixel is always the leftmost one of the ellipse.
-erow=floor(elliPos(2)+elliPos(4)/2);
-% ecol=ceil(Dl/2)+1;
-ecol=floor(elliPos(1));
-clear elliPos temp;
-% tm=imellipse(fH,[erow floor(ecol-Ds/2) Ds Dl]);
-tallMask=createMask(ellipH);
-mtmCind=find(tallMask); % Clearing mask.
-mTm=bwperim(tallMask,4); % mother tall mask.
-mtmInd=find(mTm);
-fm=imellipse(gca,[ecol floor(erow-Ds/2) Dl Ds]);
-flatMask=createMask(fm);
-mfmCind=find(flatMask);
-mFm=bwperim(flatMask,4); % mother flat mask.
-% [mfmr mfmc]=find(mFm);
-mfmInd=find(mFm);
-clear tm fm tallMask flatMask mTm mFm;
-delete(ellipH);
-
+% % Example pixel: [erow ecol]; Used to keep the mother masks. The reference
+% % pixel is always the leftmost one of the ellipse.
+% erow=floor(elliPos(2)+elliPos(4)/2);
+% % ecol=ceil(Dl/2)+1;
+% ecol=floor(elliPos(1));
+% clear elliPos temp;
+% % tm=imellipse(fH,[erow floor(ecol-Ds/2) Ds Dl]);
+% tallMask=createMask(ellipH);
+% mtmCind=find(tallMask); % Clearing mask.
+% mTm=bwperim(tallMask,4); % mother tall mask.
+% mtmInd=find(mTm);
+% fm=imellipse(gca,[ecol floor(erow-Ds/2) Dl Ds]);
+% flatMask=createMask(fm);
+% mfmCind=find(flatMask);
+% mFm=bwperim(flatMask,4); % mother flat mask.
+% % [mfmr mfmc]=find(mFm);
+% mfmInd=find(mFm);
+% clear tm fm tallMask flatMask mTm mFm;
+% delete(ellipH);
 
 pgBw=img<imgThre; % Pollen grain bw.
 % pgBw=edge(img,'Canny');
-
-% pgBw=img<imgThre; % Pollen grain bw.
-
 % pgBw2=pgBw; % Save a copy
 
+se=strel('disk',cwr,0);
+sew=zeros(size(se));
+for i=1:size(se,1)
+    for j=1:size(se,2)
+        sew(i,j)=sqrt((i-cwr-1)^2+(j-cwr-1)^2);
+    end
+end
+se=strel('arbitrary',se,sew);
 
 close all;
 figure;
