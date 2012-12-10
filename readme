@@ -1,3 +1,14 @@
+
+The main files are branMorphProc.m and preProc.m.
+
+PreProc.m is used to preprocess the image. BranMorphProc.m is used to analyze.
+
+Contact owen263@gmail.com for any problems.
+
+The codes in the directory is GPL licensed, but the 3rd party codes such as Bai's codes, SLIC, MyLee, .etc are licensed on their own.
+
+#################################
+
 About Manual Correction:
 
 The manual correction can accomplish either adding or erasing task. You only need to select a region and the program will determine the operation depending on how much the region you specified are located.

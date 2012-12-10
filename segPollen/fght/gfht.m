@@ -118,7 +118,7 @@ mmatch = length(patt)*sum(diag(fuzz));                                      % pe
 qlt = ceil(100 * (sacc(1) / mmatch));
 
 % plots
-click(255*uint8(E)+I, [src ' - gfHt (' num2str(qlt) '%)']);
+click(255*uint8(E)+uint8(I), [src ' - gfHt (' num2str(qlt) '%)']);
 hold on;
 plot(xpk, ypk, '.r', 'LineWidth',2);
 rho1 = rho * scl;
