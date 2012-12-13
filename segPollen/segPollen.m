@@ -62,7 +62,7 @@ figure,imshow(img,[]);
 
 pg=imfilter(img,fspecial('gaussian',[9,9],1.5),'replicate');
 % figure,imshow(img2,[]);
-pg=imopen(pg,strel('ball',50,62000,8));
+pg=imopen(pg,strel('ball',50,63000,8));
 pg=img-pg;
 figure,imshow(pg,[]);
 pgBw=im2bw(pg,graythresh(pg));
