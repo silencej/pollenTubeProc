@@ -17,7 +17,8 @@ img=imcomplement(img);
 % img2=imclose(img,strel('ball',3,10000,8));
 figure,imshow(img,[]);
 
-
+% bw=tileSeg(img);
+% figure,imshow(bw);
 
 %% Symmetry finding.
 % winsize=61;
