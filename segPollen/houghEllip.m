@@ -19,6 +19,8 @@ function [qlt, scl, rot, xpk, ypk]=houghEllip(src, patt, rhoRange, thetaRange, k
 %
 % Copyright (c) 2012 by Chaofeng Wang.
 
+% function [scl, rot, cx, cy]=houghEllipse(eg,rhoRange,thetaRange,)
+% [qlt, scl, rot, xpk, ypk] = gfht(src, patt, rhorange, thetarange, kwidth, varargin)
 
 
 end
