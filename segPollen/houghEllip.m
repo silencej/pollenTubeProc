@@ -1,5 +1,5 @@
 function [qlt, scl, rot, xpk, ypk]=houghEllip(eg, xRange, yRange, aRange, bRange, thetaRange)
-%
+
 % This function implements the Hough transform looking for the ellipses.
 %
 % eg:      edge image. 2-bit.
@@ -12,8 +12,6 @@ function [qlt, scl, rot, xpk, ypk]=houghEllip(eg, xRange, yRange, aRange, bRange
 % ypk:      y-axis coordinate for the center of the best matching pattern
 %
 % Copyright (c) 2012 by Chaofeng Wang.
-
-
 
 
 end
