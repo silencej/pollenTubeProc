@@ -1,0 +1,7 @@
+Randomized hough transform is better than conventional.
+
+Edge connectness should be used when randomly choosing points to construct ellipse. The connected edge could be divided based on some criteria such as 2nd derivative so that only the edge segments belonging to same ellipse are kept while the connection between the segments should be broken.
+Consider using the convexity criterion to break the elliptic segments from non-elliptic segments.
+
+For cell detection, the cell size is constant in an extent. This prior information should also be used. A windowed RHT could be set up this way.
+

@@ -8,14 +8,14 @@ close all;
 
 img=imread('../../data/guanPollen/G11-1.tif');
 
-img=imcomplement(img);
+% img=imcomplement(img);
+% % figure,imshow(img,[]);
+% 
+% % figure,imshow(img2,[]);
+% % img=imadjust(img);
+% % img=adapthisteq(img);
+% % img2=imclose(img,strel('ball',3,10000,8));
 % figure,imshow(img,[]);
-
-% figure,imshow(img2,[]);
-% img=imadjust(img);
-% img=adapthisteq(img);
-% img2=imclose(img,strel('ball',3,10000,8));
-figure,imshow(img,[]);
 
 % bw=tileSeg(img);
 % figure,imshow(bw);
@@ -61,14 +61,19 @@ figure,imshow(img,[]);
 % figure,imshow(img2,[]);
 % figure,imshow(im2bw(img2,graythresh(img2)));
 
-pg=imfilter(img,fspecial('gaussian',[9,9],1.5),'replicate');
-% figure,imshow(img2,[]);
-pg=imopen(pg,strel('ball',50,63000,8));
-pg=img-pg;
-figure,imshow(pg,[]);
-pgBw=im2bw(pg,graythresh(pg));
-figure,imshow(pgBw);
-pgBw=bwmorph(pgBw,'skel',inf);
+% pg=imfilter(img,fspecial('gaussian',[9,9],1.5),'replicate');
+% % figure,imshow(img2,[]);
+% pg=imopen(pg,strel('ball',50,63000,8));
+% pg=img-pg;
+% figure,imshow(pg,[]);
+% pgBw=im2bw(pg,graythresh(pg));
+% figure,imshow(pgBw);
+
+%%
+ed1=edge(img,'canny',[0.005,0.4],1);
+figure,imshow(ed1);
+pgBw=ed1;
+% pgBw=bwmorph(pgBw,'skel',inf);
 figure,imshow(pgBw);
 
 addpath(genpath('sam'));
