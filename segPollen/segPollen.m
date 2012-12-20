@@ -71,7 +71,7 @@ img=imread('../../data/guanPollen/G11-1.tif');
 
 %%
 ed1=edge(img,'canny',[0.005,0.4],1);
-figure,imshow(ed1);
+% figure,imshow(ed1);
 pgBw=ed1;
 % pgBw=bwmorph(pgBw,'skel',inf);
 figure,imshow(pgBw);
